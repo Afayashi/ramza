@@ -5,9 +5,10 @@
  */
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { ChevronDown, X, Phone, LogOut } from 'lucide-react';
+import { ChevronDown, X, Phone, LogOut, LogIn, Wifi, WifiOff } from 'lucide-react';
 import { NAV_GROUPS } from '@/lib/navigation';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LOGO_URL = '/manus-storage/ramz-logo_23a7522a.png';
 const GOLD = '#C8A951';
@@ -20,6 +21,7 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [location] = useLocation();
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['الرئيسية']);
+  const { user, isAuthenticated, logout, navigateToLogin } = useAuth();
 
   const toggleGroup = (label: string) => {
     setExpandedGroups(prev =>
@@ -141,8 +143,43 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </nav>
 
         {/* Footer */}
-        <div className="p-3 border-t border-sidebar-border">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+        <div className="p-3 border-t border-sidebar-border space-y-2">
+          {/* Connection Status */}
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-sidebar-accent/50">
+            {isAuthenticated ? (
+              <>
+                <Wifi size={12} className="text-green-400" />
+                <span className="text-[10px] text-green-400">متصل بقاعدة البيانات</span>
+              </>
+            ) : (
+              <>
+                <WifiOff size={12} className="text-amber-400" />
+                <span className="text-[10px] text-amber-400">بيانات تجريبية</span>
+              </>
+            )}
+          </div>
+
+          {/* Auth Button */}
+          {isAuthenticated ? (
+            <button
+              onClick={logout}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs text-red-400 hover:bg-red-500/10 transition-colors"
+            >
+              <LogOut size={14} />
+              <span>تسجيل الخروج</span>
+              {user?.name && <span className="mr-auto text-[10px] text-muted-foreground truncate max-w-[100px]">{user.name}</span>}
+            </button>
+          ) : (
+            <button
+              onClick={navigateToLogin}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+            >
+              <LogIn size={14} />
+              <span>تسجيل الدخول لعرض البيانات الحقيقية</span>
+            </button>
+          )}
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Phone size={12} />
             <span>920013517</span>
           </div>

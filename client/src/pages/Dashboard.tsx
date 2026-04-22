@@ -14,12 +14,14 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import StatCard from '@/components/shared/StatCard';
 import { LoadingState } from '@/components/shared/PageStates';
 import { useMultiEntityData } from '@/hooks/useEntityData';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 
 const fmt = (v: number) => (v || 0).toLocaleString('ar-SA');
 const fmtCurrency = (v: number) => `${fmt(v)} ر.س`;
 
 export default function Dashboard() {
+  const { isAuthenticated, navigateToLogin } = useAuth();
   const { data, loading, isDemo, reload } = useMultiEntityData([
     { name: 'Payment', sort: '-created_date', limit: 1000 },
     { name: 'Maintenance', sort: '-created_date', limit: 200 },
@@ -116,9 +118,16 @@ export default function Dashboard() {
         <div className="space-y-6">
           {/* Demo Banner */}
           {isDemo && (
-            <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20 text-sm text-primary">
-              <Info size={16} />
-              <span>يتم عرض بيانات تجريبية. قم بتسجيل الدخول لعرض البيانات الحقيقية.</span>
+            <div className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">
+              <div className="flex items-center gap-2 text-amber-400">
+                <Info size={16} />
+                <span>يتم عرض بيانات تجريبية. سجّل الدخول لعرض بياناتك الحقيقية.</span>
+              </div>
+              {!isAuthenticated && (
+                <Button onClick={navigateToLogin} variant="outline" size="sm" className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-xs">
+                  تسجيل الدخول
+                </Button>
+              )}
             </div>
           )}
 

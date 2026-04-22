@@ -1,10 +1,12 @@
 /*
  * الشريط العلوي - رمز الإبداع
  * يحتوي على زر القائمة، البحث، الإشعارات، والمستخدم
+ * مع دعم تسجيل الدخول/الخروج عبر Base44
  */
-import { Menu, Search, Bell, User, RefreshCw } from 'lucide-react';
+import { Menu, Search, Bell, User, LogIn, LogOut, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TopBarProps {
   onMenuToggle: () => void;
@@ -13,6 +15,8 @@ interface TopBarProps {
 
 export default function TopBar({ onMenuToggle, pageTitle }: TopBarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { user, isAuthenticated, isLoadingAuth, logout, navigateToLogin } = useAuth();
 
   return (
     <header className="sticky top-0 z-30 h-14 bg-card/80 backdrop-blur-md border-b border-border flex items-center px-4 gap-3">
@@ -61,14 +65,69 @@ export default function TopBar({ onMenuToggle, pageTitle }: TopBarProps) {
 
       {/* Actions */}
       <div className="flex items-center gap-1">
+        {/* Notifications */}
         <button className="relative p-2 rounded-md hover:bg-accent text-muted-foreground transition-colors">
           <Bell size={18} />
           <span className="absolute top-1 left-1 w-2 h-2 bg-primary rounded-full" />
         </button>
 
-        <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
-          <User size={16} className="text-primary" />
-        </div>
+        {/* User / Auth */}
+        {isLoadingAuth ? (
+          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+            <Loader2 size={14} className="animate-spin text-muted-foreground" />
+          </div>
+        ) : isAuthenticated && user ? (
+          <div className="relative">
+            <button
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-accent transition-colors"
+            >
+              <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+                <User size={16} className="text-primary" />
+              </div>
+              <span className="text-xs text-foreground hidden sm:block max-w-[120px] truncate">
+                {user.name || user.email || 'المستخدم'}
+              </span>
+            </button>
+
+            {/* User Dropdown */}
+            {userMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                <div className="absolute left-0 top-full mt-1 w-48 bg-popover border border-border rounded-lg shadow-lg z-50 py-1">
+                  <div className="px-3 py-2 border-b border-border">
+                    <p className="text-xs font-medium text-foreground truncate">
+                      {user.name || 'المستخدم'}
+                    </p>
+                    {user.email && (
+                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                        {user.email}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      logout();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-accent transition-colors"
+                  >
+                    <LogOut size={14} />
+                    <span>تسجيل الخروج</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={navigateToLogin}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+          >
+            <LogIn size={14} />
+            <span className="hidden sm:inline">تسجيل الدخول</span>
+          </button>
+        )}
       </div>
     </header>
   );
