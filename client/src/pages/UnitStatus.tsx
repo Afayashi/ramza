@@ -3,7 +3,11 @@
  * عرض بصري لحالة جميع الوحدات
  */
 import { useState, useMemo } from 'react';
-import { Home, Building2, CheckCircle, XCircle, Wrench, Search } from 'lucide-react';
+import { Home, CheckCircle, XCircle, Wrench, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { UnitForm } from '@/components/forms';
+import { base44 } from '@/lib/base44Client';
+import { toast } from 'sonner';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import PageHeader from '@/components/shared/PageHeader';
 import StatCard from '@/components/shared/StatCard';
@@ -12,7 +16,9 @@ import { cn } from '@/lib/utils';
 import { useMultiEntityData } from '@/hooks/useEntityData';
 
 export default function UnitStatus() {
-  const { data, loading } = useMultiEntityData([
+  const [showForm, setShowForm] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
+  const { data, loading, reload } = useMultiEntityData([
     { name: 'Unit', sort: '-created_date', limit: 2000 },
     { name: 'Property' },
   ]);
@@ -20,6 +26,33 @@ export default function UnitStatus() {
   const properties = data.Property || [];
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterProperty, setFilterProperty] = useState('all');
+
+  const handleAdd = () => { setEditItem(null); setShowForm(true); };
+  const handleEdit = (item: any) => { setEditItem(item); setShowForm(true); };
+  const handleSubmit = async (formData: any) => {
+    try {
+      if (editItem) {
+        await base44.entities.Unit.update(editItem.id, formData);
+        toast.success('تم تحديث الوحدة');
+      } else {
+        await base44.entities.Unit.create(formData);
+        toast.success('تم إضافة الوحدة');
+      }
+      reload();
+    } catch {
+      toast.error('حدث خطأ أثناء حفظ البيانات');
+    }
+  };
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذه الوحدة؟')) return;
+    try {
+      await base44.entities.Unit.delete(id);
+      toast.success('تم حذف الوحدة');
+      reload();
+    } catch {
+      toast.error('حدث خطأ');
+    }
+  };
 
   const filtered = useMemo(() => {
     return units.filter(u => {
@@ -55,7 +88,9 @@ export default function UnitStatus() {
 
   return (
     <DashboardLayout pageTitle="حالة الوحدات">
-      <PageHeader title="حالة الوحدات" description={`${units.length} وحدة`} />
+      <PageHeader title="حالة الوحدات" description={`${units.length} وحدة`}>
+        <Button size="sm" className="gap-2" onClick={handleAdd}><Plus size={16} /> إضافة وحدة</Button>
+      </PageHeader>
 
       {loading ? <LoadingState /> : (
         <div className="space-y-4">
@@ -110,6 +145,10 @@ export default function UnitStatus() {
                     <Home size={18} className="mx-auto mb-1" />
                     <p className="text-xs font-medium truncate">{name || 'وحدة'}</p>
                     <p className="text-[10px] mt-0.5">{statusLabel(status)}</p>
+                    <div className="flex justify-center gap-0.5 mt-1.5">
+                      <button onClick={() => handleEdit(unit)} className="p-1 rounded hover:bg-white/10"><Pencil size={10} /></button>
+                      <button onClick={() => handleDelete(unit.id)} className="p-1 rounded hover:bg-red-500/20"><Trash2 size={10} /></button>
+                    </div>
                   </div>
                 );
               })}
@@ -117,6 +156,7 @@ export default function UnitStatus() {
           )}
         </div>
       )}
+      <UnitForm unit={editItem} isOpen={showForm} onClose={() => { setShowForm(false); setEditItem(null); }} onSubmit={handleSubmit} />
     </DashboardLayout>
   );
 }

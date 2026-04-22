@@ -1,8 +1,9 @@
 /*
  * صفحة طلبات الصيانة - رمز الإبداع
+ * مع نماذج CRUD
  */
 import { useState } from 'react';
-import { Wrench, Plus, CheckCircle, Clock, AlertTriangle, Eye } from 'lucide-react';
+import { Wrench, Plus, CheckCircle, Clock, Pencil, Trash2 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
@@ -11,9 +12,42 @@ import { LoadingState, EmptyState } from '@/components/shared/PageStates';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useEntityData } from '@/hooks/useEntityData';
+import { MaintenanceForm } from '@/components/forms';
+import { base44 } from '@/lib/base44Client';
+import { toast } from 'sonner';
 
 export default function Maintenance() {
-  const { data: requests, loading } = useEntityData('Maintenance');
+  const { data: requests, loading, reload } = useEntityData('Maintenance');
+  const [showForm, setShowForm] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
+
+  const handleAdd = () => { setEditItem(null); setShowForm(true); };
+  const handleEdit = (item: any) => { setEditItem(item); setShowForm(true); };
+
+  const handleSubmit = async (formData: any) => {
+    try {
+      if (editItem) {
+        await base44.entities.Maintenance.update(editItem.id, formData);
+        toast.success('تم تحديث طلب الصيانة بنجاح');
+      } else {
+        await base44.entities.Maintenance.create(formData);
+        toast.success('تم إنشاء طلب الصيانة بنجاح');
+      }
+      reload();
+    } catch (err) {
+      toast.error('حدث خطأ أثناء حفظ البيانات');
+      throw err;
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذا الطلب؟')) return;
+    try {
+      await base44.entities.Maintenance.delete(id);
+      toast.success('تم حذف طلب الصيانة');
+      reload();
+    } catch { toast.error('حدث خطأ أثناء الحذف'); }
+  };
 
   const statusBadge = (status: string) => {
     const map: Record<string, { color: string; label: string }> = {
@@ -32,6 +66,7 @@ export default function Maintenance() {
   const priorityBadge = (priority: string) => {
     const map: Record<string, { color: string; label: string }> = {
       'high': { color: 'bg-red-500/10 text-red-400', label: 'عالية' },
+      'urgent': { color: 'bg-red-500/10 text-red-400', label: 'عاجل' },
       'medium': { color: 'bg-amber-500/10 text-amber-400', label: 'متوسطة' },
       'low': { color: 'bg-green-500/10 text-green-400', label: 'منخفضة' },
       'عاجل': { color: 'bg-red-500/10 text-red-400', label: 'عاجل' },
@@ -50,10 +85,7 @@ export default function Maintenance() {
   return (
     <DashboardLayout pageTitle="الصيانة">
       <PageHeader title="طلبات الصيانة" description={`${requests.length} طلب`}>
-        <Button size="sm" className="gap-2">
-          <Plus size={16} />
-          طلب صيانة جديد
-        </Button>
+        <Button size="sm" className="gap-2" onClick={handleAdd}><Plus size={16} /> طلب صيانة جديد</Button>
       </PageHeader>
 
       {loading ? (
@@ -67,7 +99,7 @@ export default function Maintenance() {
           </div>
 
           {requests.length === 0 ? (
-            <EmptyState title="لا توجد طلبات صيانة" />
+            <EmptyState title="لا توجد طلبات صيانة" actionLabel="طلب صيانة جديد" onAction={handleAdd} />
           ) : (
             <DataTable
               columns={[
@@ -76,22 +108,22 @@ export default function Maintenance() {
                 { key: 'اسم_الوحدة', label: 'الوحدة', render: (v, r) => v || r.unit_name || '—' },
                 { key: 'status', label: 'الحالة', render: (v, r) => statusBadge(v || r['حالة_الطلب'] || '') },
                 { key: 'priority', label: 'الأولوية', render: (v, r) => priorityBadge(v || r['الأولوية'] || '') },
-                {
-                  key: 'created_date', label: 'التاريخ',
-                  render: (v) => v ? new Date(v).toLocaleDateString('ar-SA') : '—'
-                },
+                { key: 'created_date', label: 'التاريخ', render: (v) => v ? new Date(v).toLocaleDateString('ar-SA') : '—' },
               ]}
               data={requests}
               searchKeys={['عنوان_الطلب', 'title', 'اسم_العقار', 'property_name']}
               actions={(row) => (
-                <button className="p-1.5 rounded-md hover:bg-accent text-muted-foreground">
-                  <Eye size={14} />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => handleEdit(row)} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground"><Pencil size={14} /></button>
+                  <button onClick={() => handleDelete(row.id)} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
+                </div>
               )}
             />
           )}
         </div>
       )}
+
+      <MaintenanceForm maintenance={editItem} isOpen={showForm} onClose={() => { setShowForm(false); setEditItem(null); }} onSubmit={handleSubmit} />
     </DashboardLayout>
   );
 }
