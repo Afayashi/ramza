@@ -6,7 +6,8 @@ import {
   Home, Building2, Users, DollarSign, Wrench, BarChart2,
   Settings, FileText, Bell, MessageSquare, Shield,
   Briefcase, ClipboardList, Map, UserCheck, Receipt,
-  TrendingUp, Database, Zap, HelpCircle
+  TrendingUp, Database, Zap, HelpCircle, Archive,
+  Calendar, Star, Send, Globe, Printer, User
 } from 'lucide-react';
 
 export interface NavItem {
@@ -60,6 +61,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'بوابة المستأجر', path: '/tenant-portal' },
       { label: 'تحليلات المستأجرين', path: '/tenant-analytics' },
       { label: 'تقييم المستأجرين', path: '/tenant-rating' },
+      { label: 'إدارة الإيجارات', path: '/rent-management' },
+      { label: 'منصة إيجار', path: '/ejar' },
     ],
   },
   {
@@ -101,6 +104,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'تقارير العائد', path: '/roi-reports' },
       { label: 'أداء العقارات', path: '/property-performance' },
       { label: 'تقرير عقار منفرد', path: '/property-single-report' },
+      { label: 'تقارير الإشغال', path: '/occupancy-report' },
       { label: 'الدراسة السوقية', path: '/market-research' },
       { label: 'مركز الطباعة', path: '/print-center' },
     ],
@@ -114,7 +118,9 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'منصة التواصل', path: '/communication' },
       { label: 'واتساب', path: '/whatsapp' },
       { label: 'لوحة التنبيهات', path: '/alerts' },
+      { label: 'مركز الإشعارات', path: '/notifications' },
       { label: 'الأرشيف', path: '/archive' },
+      { label: 'إدارة العملاء (CRM)', path: '/crm' },
     ],
   },
   {
@@ -122,7 +128,11 @@ export const NAV_GROUPS: NavGroup[] = [
     icon: Settings,
     items: [
       { label: 'الإعدادات العامة', path: '/settings' },
+      { label: 'إعدادات الشركة', path: '/company-settings' },
+      { label: 'إدارة المستخدمين', path: '/user-management' },
       { label: 'استيراد البيانات', path: '/data-import' },
+      { label: 'النسخ الاحتياطي', path: '/backup' },
+      { label: 'سجل النشاطات', path: '/activity-log' },
       { label: 'دليل النظام', path: '/system-guide' },
     ],
   },

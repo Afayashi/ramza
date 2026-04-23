@@ -10,108 +10,172 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 
-// Pages
+// الصفحات الأساسية
 import Dashboard from "./pages/Dashboard";
+import ManagerDashboard from "./pages/ManagerDashboard";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import SmartSuggestions from "./pages/SmartSuggestions";
+
+// العقارات
 import Properties from "./pages/Properties";
+import PropertyFormPage from "./pages/PropertyFormPage";
+import PropertyDetail from "./pages/PropertyDetail";
+import UnitStatus from "./pages/UnitStatus";
+import PropertyComparison from "./pages/PropertyComparison";
+import PropertyDocuments from "./pages/PropertyDocuments";
+import MapView from "./pages/MapView";
+import Owners from "./pages/Owners";
+import OwnerPortal from "./pages/OwnerPortal";
+import BrokerageContracts from "./pages/BrokerageContracts";
+import AdLicenses from "./pages/AdLicenses";
+
+// المستأجرون
 import Tenants from "./pages/Tenants";
 import Contracts from "./pages/Contracts";
-import Payments from "./pages/Payments";
-import Maintenance from "./pages/Maintenance";
-import FinancialReports from "./pages/FinancialReports";
-import Settings from "./pages/Settings";
-import Expenses from "./pages/Expenses";
-import Invoices from "./pages/Invoices";
-import Owners from "./pages/Owners";
+import LeaseBuilder from "./pages/LeaseBuilder";
+import ESignature from "./pages/ESignature";
 import LeaseAlerts from "./pages/LeaseAlerts";
+import TenantPortal from "./pages/TenantPortal";
+import TenantAnalytics from "./pages/TenantAnalytics";
+import TenantRating from "./pages/TenantRating";
+
+// المالية
+import Payments from "./pages/Payments";
+import Invoices from "./pages/Invoices";
+import AutoInvoicing from "./pages/AutoInvoicing";
+import Expenses from "./pages/Expenses";
 import OverdueTracker from "./pages/OverdueTracker";
+import FinancialStatements from "./pages/FinancialStatements";
+import PaymentTimeline from "./pages/PaymentTimeline";
+import Accounting from "./pages/Accounting";
+import PaymentGateway from "./pages/PaymentGateway";
+
+// الصيانة
+import Maintenance from "./pages/Maintenance";
+import MaintenanceManager from "./pages/MaintenanceManager";
+import PreventiveMaintenance from "./pages/PreventiveMaintenance";
+import Appointments from "./pages/Appointments";
+import Tickets from "./pages/Tickets";
+import TechnicianDashboard from "./pages/TechnicianDashboard";
+import TechnicianManager from "./pages/TechnicianManager";
+import Inventory from "./pages/Inventory";
+
+// التقارير
+import FinancialReports from "./pages/FinancialReports";
+import FinancialSummary from "./pages/FinancialSummary";
+import FinancialForecasting from "./pages/FinancialForecasting";
+import ROI from "./pages/ROI";
+import PropertyPerformance from "./pages/PropertyPerformance";
+import PropertySingleReport from "./pages/PropertySingleReport";
+import MarketResearch from "./pages/MarketResearch";
+import PrintCenter from "./pages/PrintCenter";
+import OccupancyReport from "./pages/OccupancyReport";
+
+// العمليات
 import Complaints from "./pages/Complaints";
 import Documents from "./pages/Documents";
-import UnitStatus from "./pages/UnitStatus";
-import GenericPage from "./pages/GenericPage";
+import Communication from "./pages/Communication";
+import WhatsApp from "./pages/WhatsApp";
+import AlertsDashboard from "./pages/AlertsDashboard";
+import Archive from "./pages/Archive";
+import NotificationsCenter from "./pages/NotificationsCenter";
+import CRM from "./pages/CRM";
 
-// Icons for generic pages
-import {
-  BarChart2, Building2, Users, DollarSign, Wrench, FileText,
-  MessageSquare, Map, Shield, Briefcase, ClipboardList, Zap,
-  TrendingUp, Database, Bell, UserCheck, Receipt, HelpCircle,
-  Printer, Globe, Calendar, Star, Send, Archive
-} from 'lucide-react';
+// الإعدادات
+import Settings from "./pages/Settings";
+import DataImport from "./pages/DataImport";
+import SystemGuide from "./pages/SystemGuide";
+import Backup from "./pages/Backup";
+import ActivityLog from "./pages/ActivityLog";
+import UserManagement from "./pages/UserManagement";
+import CompanySettings from "./pages/CompanySettings";
+import RentManagement from "./pages/RentManagement";
+import Ejar from "./pages/Ejar";
 
 function Router() {
   return (
     <Switch>
       {/* الرئيسية */}
       <Route path="/" component={Dashboard} />
-      <Route path="/manager-dashboard">{() => <GenericPage title="لوحة المدير" icon={Shield} />}</Route>
-      <Route path="/analytics">{() => <GenericPage title="التحليلات" icon={BarChart2} />}</Route>
-      <Route path="/smart-insights">{() => <GenericPage title="المقترحات الذكية" icon={Zap} />}</Route>
+      <Route path="/manager-dashboard" component={ManagerDashboard} />
+      <Route path="/analytics" component={AnalyticsDashboard} />
+      <Route path="/smart-insights" component={SmartSuggestions} />
 
       {/* العقارات */}
       <Route path="/properties" component={Properties} />
-      <Route path="/property-form">{() => <GenericPage title="إضافة عقار جديد" icon={Building2} />}</Route>
-      <Route path="/property-detail">{() => <GenericPage title="تفاصيل العقار" icon={Building2} />}</Route>
+      <Route path="/property-form" component={PropertyFormPage} />
+      <Route path="/property-detail" component={PropertyDetail} />
       <Route path="/unit-status" component={UnitStatus} />
-      <Route path="/property-comparison">{() => <GenericPage title="مقارنة العقارات" icon={Building2} />}</Route>
-      <Route path="/property-documents">{() => <GenericPage title="مستندات العقارات" icon={FileText} />}</Route>
-      <Route path="/map-view">{() => <GenericPage title="الخريطة التفاعلية" icon={Map} />}</Route>
+      <Route path="/property-comparison" component={PropertyComparison} />
+      <Route path="/property-documents" component={PropertyDocuments} />
+      <Route path="/map-view" component={MapView} />
       <Route path="/owners" component={Owners} />
-      <Route path="/owner-portal">{() => <GenericPage title="بوابة المالك" icon={UserCheck} />}</Route>
-      <Route path="/brokerage-contracts">{() => <GenericPage title="عقود الوساطة" icon={Briefcase} />}</Route>
-      <Route path="/ad-licenses">{() => <GenericPage title="تراخيص الإعلانات" icon={Globe} />}</Route>
+      <Route path="/owner-portal" component={OwnerPortal} />
+      <Route path="/brokerage-contracts" component={BrokerageContracts} />
+      <Route path="/ad-licenses" component={AdLicenses} />
 
       {/* المستأجرون */}
       <Route path="/tenants" component={Tenants} />
       <Route path="/contracts" component={Contracts} />
-      <Route path="/lease-builder">{() => <GenericPage title="إنشاء عقد جديد" icon={FileText} />}</Route>
-      <Route path="/e-signature">{() => <GenericPage title="التوقيع الإلكتروني" icon={ClipboardList} />}</Route>
+      <Route path="/lease-builder" component={LeaseBuilder} />
+      <Route path="/e-signature" component={ESignature} />
       <Route path="/lease-alerts" component={LeaseAlerts} />
-      <Route path="/tenant-portal">{() => <GenericPage title="بوابة المستأجر" icon={Users} />}</Route>
-      <Route path="/tenant-analytics">{() => <GenericPage title="تحليلات المستأجرين" icon={BarChart2} />}</Route>
-      <Route path="/tenant-rating">{() => <GenericPage title="تقييم المستأجرين" icon={Star} />}</Route>
+      <Route path="/tenant-portal" component={TenantPortal} />
+      <Route path="/tenant-analytics" component={TenantAnalytics} />
+      <Route path="/tenant-rating" component={TenantRating} />
 
       {/* المالية */}
       <Route path="/payments" component={Payments} />
       <Route path="/invoices" component={Invoices} />
-      <Route path="/auto-invoicing">{() => <GenericPage title="الفواتير التلقائية" icon={Receipt} />}</Route>
+      <Route path="/auto-invoicing" component={AutoInvoicing} />
       <Route path="/expenses" component={Expenses} />
       <Route path="/overdue-tracker" component={OverdueTracker} />
-      <Route path="/financial-statements">{() => <GenericPage title="كشوف الحسابات" icon={DollarSign} />}</Route>
-      <Route path="/payment-timeline">{() => <GenericPage title="الجدول الزمني للدفعات" icon={Calendar} />}</Route>
-      <Route path="/accounting">{() => <GenericPage title="المحاسبة" icon={DollarSign} />}</Route>
-      <Route path="/payment-gateway">{() => <GenericPage title="بوابة الدفع" icon={DollarSign} />}</Route>
+      <Route path="/financial-statements" component={FinancialStatements} />
+      <Route path="/payment-timeline" component={PaymentTimeline} />
+      <Route path="/accounting" component={Accounting} />
+      <Route path="/payment-gateway" component={PaymentGateway} />
 
       {/* الصيانة */}
       <Route path="/maintenance" component={Maintenance} />
-      <Route path="/maintenance-manager">{() => <GenericPage title="إدارة الصيانة" icon={Wrench} />}</Route>
-      <Route path="/preventive-maintenance">{() => <GenericPage title="الصيانة الوقائية" icon={Wrench} />}</Route>
-      <Route path="/appointments">{() => <GenericPage title="المواعيد" icon={Calendar} />}</Route>
-      <Route path="/tickets">{() => <GenericPage title="تذاكر الدعم" icon={MessageSquare} />}</Route>
-      <Route path="/technician-dashboard">{() => <GenericPage title="لوحة الفنيين" icon={Wrench} />}</Route>
-      <Route path="/technician-manager">{() => <GenericPage title="إدارة الفنيين" icon={Users} />}</Route>
-      <Route path="/inventory">{() => <GenericPage title="إدارة المخزون" icon={Database} />}</Route>
+      <Route path="/maintenance-manager" component={MaintenanceManager} />
+      <Route path="/preventive-maintenance" component={PreventiveMaintenance} />
+      <Route path="/appointments" component={Appointments} />
+      <Route path="/tickets" component={Tickets} />
+      <Route path="/technician-dashboard" component={TechnicianDashboard} />
+      <Route path="/technician-manager" component={TechnicianManager} />
+      <Route path="/inventory" component={Inventory} />
 
       {/* التقارير */}
       <Route path="/financial-reports" component={FinancialReports} />
-      <Route path="/financial-summary">{() => <GenericPage title="الملخص المالي" icon={TrendingUp} />}</Route>
-      <Route path="/financial-forecasting">{() => <GenericPage title="التنبؤ المالي" icon={TrendingUp} />}</Route>
-      <Route path="/roi-reports">{() => <GenericPage title="تقارير العائد" icon={BarChart2} />}</Route>
-      <Route path="/property-performance">{() => <GenericPage title="أداء العقارات" icon={Building2} />}</Route>
-      <Route path="/property-single-report">{() => <GenericPage title="تقرير عقار منفرد" icon={FileText} />}</Route>
-      <Route path="/market-research">{() => <GenericPage title="الدراسة السوقية" icon={Globe} />}</Route>
-      <Route path="/print-center">{() => <GenericPage title="مركز الطباعة" icon={Printer} />}</Route>
+      <Route path="/financial-summary" component={FinancialSummary} />
+      <Route path="/financial-forecasting" component={FinancialForecasting} />
+      <Route path="/roi-reports" component={ROI} />
+      <Route path="/property-performance" component={PropertyPerformance} />
+      <Route path="/property-single-report" component={PropertySingleReport} />
+      <Route path="/market-research" component={MarketResearch} />
+      <Route path="/print-center" component={PrintCenter} />
+      <Route path="/occupancy-report" component={OccupancyReport} />
 
       {/* العمليات */}
       <Route path="/complaints" component={Complaints} />
       <Route path="/documents" component={Documents} />
-      <Route path="/communication">{() => <GenericPage title="منصة التواصل" icon={MessageSquare} />}</Route>
-      <Route path="/whatsapp">{() => <GenericPage title="واتساب" icon={Send} />}</Route>
-      <Route path="/alerts">{() => <GenericPage title="لوحة التنبيهات" icon={Bell} />}</Route>
-      <Route path="/archive">{() => <GenericPage title="الأرشيف" icon={Archive} />}</Route>
+      <Route path="/communication" component={Communication} />
+      <Route path="/whatsapp" component={WhatsApp} />
+      <Route path="/alerts" component={AlertsDashboard} />
+      <Route path="/archive" component={Archive} />
+      <Route path="/notifications" component={NotificationsCenter} />
+      <Route path="/crm" component={CRM} />
 
       {/* الإعدادات */}
       <Route path="/settings" component={Settings} />
-      <Route path="/data-import">{() => <GenericPage title="استيراد البيانات" icon={Database} />}</Route>
-      <Route path="/system-guide">{() => <GenericPage title="دليل النظام" icon={HelpCircle} />}</Route>
+      <Route path="/data-import" component={DataImport} />
+      <Route path="/system-guide" component={SystemGuide} />
+      <Route path="/backup" component={Backup} />
+      <Route path="/activity-log" component={ActivityLog} />
+      <Route path="/user-management" component={UserManagement} />
+      <Route path="/company-settings" component={CompanySettings} />
+      <Route path="/rent-management" component={RentManagement} />
+      <Route path="/ejar" component={Ejar} />
 
       {/* 404 */}
       <Route path="/404" component={NotFound} />
