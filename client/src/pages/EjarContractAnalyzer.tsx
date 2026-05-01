@@ -185,10 +185,30 @@ function capture(text: string, ...markers: string[]): string {
   return '';
 }
 
+// تصحيح أشهر تشوهات OCR العربية في عقود PDF
+function normalizeArabicOcr(input: string): string {
+  return input
+    .normalize('NFKC')
+    .replace(/[\u064B-\u065F\u0670]/g, '')
+    .replace(/\u0640/g, '')
+    .replace(/ا\s*لاسم/g, 'الاسم')
+    .replace(/االسم/g, 'الاسم')
+    .replace(/ا\s*ل?جنسية/g, 'الجنسية')
+    .replace(/الجنسية/g, 'الجنسية')
+    .replace(/الهوية/g, 'الهوية')
+    .replace(/ا\s*ل?جوال/g, 'الجوال')
+    .replace(/ا\s*ل?الكتروني|ا\s*ل?إلكتروني/g, 'الإلكتروني')
+    .replace(/ا\s*ل?ايجار|ا\s*ل?إيجار/g, 'الإيجار')
+    .replace(/ا\s*ل?ضمان/g, 'الضمان')
+    .replace(/ا\s*ل?دورية/g, 'الدورية')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // تنظيف القيم المستخرجة من PDF (تقليل الكلمات الإنجليزية الضوضائية)
 function cleanExtractedValue(value?: string): string {
   if (!value) return '';
-  return value
+  return normalizeArabicOcr(value)
     .replace(/\s+/g, ' ')
     .replace(/(?:Last Rent Payment|Regular Rent Payment|Total Contract value|Annual Rent|Amount|Cont|Num)/gi, '')
     .replace(/[|]/g, ' ')
@@ -219,27 +239,28 @@ function formatSar(value?: string): string {
 
 /** استخراج بيانات عقد إيجار من نص PDF */
 function parseEjarPdfText(text: string): EjarPdfContract {
-  const c: EjarPdfContract = { rawText: text };
+  const source = normalizeArabicOcr(text);
+  const c: EjarPdfContract = { rawText: source };
 
   // ═══ 1: بيانات العقد ═══
-  c.contractNumber = capture(text, 'رقم سجل العقد:', 'Contract No.', 'No Contract');
-  c.contractType = cleanExtractedValue(capture(text, 'نوع العقد:', 'Type Contract', 'Contract Type'));
-  c.contractDate = cleanExtractedValue(capture(text, 'تاريخ إبرام العقد:', 'Contract Sealing Date', 'Sealing Date'));
-  c.contractLocation = cleanExtractedValue(capture(text, 'مكان إبرام العقد:', 'Sealing Contract Location', 'Location'));
-  c.startDate = cleanExtractedValue(capture(text, 'تاريخ بداية مَّدة اإليجار:', 'تاريخ بداية مدة الإيجار:', 'Tenancy Start Date'));
-  c.endDate = cleanExtractedValue(capture(text, 'تاريخ نهاية مَّدة اإليجار:', 'تاريخ نهاية مدة الإيجار:', 'Tenancy End Date'));
+  c.contractNumber = capture(source, 'رقم سجل العقد:', 'Contract No.', 'No Contract');
+  c.contractType = cleanExtractedValue(capture(source, 'نوع العقد:', 'Type Contract', 'Contract Type'));
+  c.contractDate = cleanExtractedValue(capture(source, 'تاريخ إبرام العقد:', 'Contract Sealing Date', 'Sealing Date'));
+  c.contractLocation = cleanExtractedValue(capture(source, 'مكان إبرام العقد:', 'Sealing Contract Location', 'Location'));
+  c.startDate = cleanExtractedValue(capture(source, 'تاريخ بداية مدة الإيجار:', 'Tenancy Start Date'));
+  c.endDate = cleanExtractedValue(capture(source, 'تاريخ نهاية مدة الإيجار:', 'Tenancy End Date'));
 
   // ═══ 2: بيانات المؤجر ═══
   // نبحث عن قسم المؤجر ونستخرج منه
-  const lessorIdx = text.indexOf('بيانات المؤّجر') !== -1
-    ? text.indexOf('بيانات المؤّجر')
-    : text.indexOf('Lessor Data');
-  const tenantIdx = text.indexOf('بيانات المستأجر') !== -1
-    ? text.indexOf('بيانات المستأجر')
-    : text.indexOf('Tenant Data');
+  const lessorIdx = source.indexOf('بيانات المؤجر') !== -1
+    ? source.indexOf('بيانات المؤجر')
+    : source.indexOf('Lessor Data');
+  const tenantIdx = source.indexOf('بيانات المستأجر') !== -1
+    ? source.indexOf('بيانات المستأجر')
+    : source.indexOf('Tenant Data');
 
   if (lessorIdx !== -1) {
-    const lessorSection = text.slice(lessorIdx, tenantIdx !== -1 ? tenantIdx : lessorIdx + 500);
+    const lessorSection = source.slice(lessorIdx, tenantIdx !== -1 ? tenantIdx : lessorIdx + 500);
     c.ownerName = cleanExtractedValue(capture(lessorSection, 'االسم:', 'الاسم:', 'Name'));
     c.ownerNationality = cleanExtractedValue(capture(lessorSection, 'الجنسَّية:', 'الجنسية:', 'Nationality'));
     c.ownerIdType = cleanExtractedValue(capture(lessorSection, 'نوع الهوَّية:', 'نوع الهوية:', 'ID Type'));
@@ -249,12 +270,12 @@ function parseEjarPdfText(text: string): EjarPdfContract {
   }
 
   // ═══ 4: بيانات المستأجر ═══
-  const brokerIdx = text.indexOf('بيانات منشأة الوساطة') !== -1
-    ? text.indexOf('بيانات منشأة الوساطة')
-    : text.indexOf('Brokerage Entity');
+  const brokerIdx = source.indexOf('بيانات منشأة الوساطة') !== -1
+    ? source.indexOf('بيانات منشأة الوساطة')
+    : source.indexOf('Brokerage Entity');
 
   if (tenantIdx !== -1) {
-    const tenantSection = text.slice(tenantIdx, brokerIdx !== -1 ? brokerIdx : tenantIdx + 500);
+    const tenantSection = source.slice(tenantIdx, brokerIdx !== -1 ? brokerIdx : tenantIdx + 500);
     c.tenantName = cleanExtractedValue(capture(tenantSection, 'االسم:', 'الاسم:', 'Name'));
     c.tenantNationality = cleanExtractedValue(capture(tenantSection, 'الجنسَّية:', 'الجنسية:', 'Nationality'));
     c.tenantIdType = cleanExtractedValue(capture(tenantSection, 'نوع الهوَّية:', 'نوع الهوية:', 'ID Type'));
@@ -264,12 +285,12 @@ function parseEjarPdfText(text: string): EjarPdfContract {
   }
 
   // ═══ 6: الوساطة ═══
-  const ownerDocIdx = text.indexOf('بيانات مستندات الملكَّية') !== -1
-    ? text.indexOf('بيانات مستندات الملكَّية')
-    : text.indexOf('Ownership document Data');
+  const ownerDocIdx = source.indexOf('بيانات مستندات الملكية') !== -1
+    ? source.indexOf('بيانات مستندات الملكية')
+    : source.indexOf('Ownership document Data');
 
   if (brokerIdx !== -1) {
-    const brokerSection = text.slice(brokerIdx, ownerDocIdx !== -1 ? ownerDocIdx : brokerIdx + 600);
+    const brokerSection = source.slice(brokerIdx, ownerDocIdx !== -1 ? ownerDocIdx : brokerIdx + 600);
     c.brokerCompany = cleanExtractedValue(capture(brokerSection, 'اسم منشأة الوساطة العقارية:', 'Brokerage Entity Name'));
     c.brokerCR = cleanExtractedValue(capture(brokerSection, 'رقم الِّسجل الِّتجاري:', 'رقم السجل التجاري:', 'CR No.'));
     c.brokerName = cleanExtractedValue(capture(brokerSection, 'اسم الموظف:', 'Broker Name'));
@@ -278,12 +299,12 @@ function parseEjarPdfText(text: string): EjarPdfContract {
   }
 
   // ═══ 7: مستندات الملكية ═══
-  const propDataIdx = text.indexOf('بيانات العقار') !== -1
-    ? text.indexOf('بيانات العقار')
-    : text.indexOf('Property Data');
+  const propDataIdx = source.indexOf('بيانات العقار') !== -1
+    ? source.indexOf('بيانات العقار')
+    : source.indexOf('Property Data');
 
   if (ownerDocIdx !== -1) {
-    const docSection = text.slice(ownerDocIdx, propDataIdx !== -1 ? propDataIdx : ownerDocIdx + 400);
+    const docSection = source.slice(ownerDocIdx, propDataIdx !== -1 ? propDataIdx : ownerDocIdx + 400);
     c.titleDeedNumber = cleanExtractedValue(capture(docSection, 'Title Deed No:', 'رقم المستند:', 'رقم الصك'));
     c.titleDeedIssuer = cleanExtractedValue(capture(docSection, 'Issuer:', 'جهة اإلصدار:', 'جهة الإصدار:'));
     c.titleDeedDate = cleanExtractedValue(capture(docSection, 'Issue Date:', 'تاريخ اإلصدار:', 'تاريخ الإصدار:'));
@@ -292,14 +313,12 @@ function parseEjarPdfText(text: string): EjarPdfContract {
   }
 
   // ═══ 8: بيانات العقار ═══
-  const unitsIdx = text.indexOf('بيانات الوحدات اإليجارَّية') !== -1
-    ? text.indexOf('بيانات الوحدات اإليجارَّية')
-    : text.indexOf('بيانات الوحدات الإيجارية') !== -1
-    ? text.indexOf('بيانات الوحدات الإيجارية')
-    : text.indexOf('Rental Units Data');
+  const unitsIdx = source.indexOf('بيانات الوحدات الإيجارية') !== -1
+    ? source.indexOf('بيانات الوحدات الإيجارية')
+    : source.indexOf('Rental Units Data');
 
   if (propDataIdx !== -1) {
-    const propSection = text.slice(propDataIdx, unitsIdx !== -1 ? unitsIdx : propDataIdx + 500);
+    const propSection = source.slice(propDataIdx, unitsIdx !== -1 ? unitsIdx : propDataIdx + 500);
     c.nationalAddress = cleanExtractedValue(capture(propSection, 'العنوان الوطني:', 'National Address'));
     c.propertyType = cleanExtractedValue(capture(propSection, 'نوع بناء العقار:', 'Property Type'));
     c.propertyUsage = cleanExtractedValue(capture(propSection, 'الغرض من استخدام العقار:', 'Property Usage'));
@@ -317,16 +336,16 @@ function parseEjarPdfText(text: string): EjarPdfContract {
       }
     }
     // محاولة من السياق
-    if (!c.city) c.city = capture(text, 'الرياض') ? 'الرياض' : capture(text, 'جدة') ? 'جدة' : capture(text, 'مكة') ? 'مكة' : '';
+    if (!c.city) c.city = capture(source, 'الرياض') ? 'الرياض' : capture(source, 'جدة') ? 'جدة' : capture(source, 'مكة') ? 'مكة' : '';
   }
 
   // ═══ 9: الوحدة الإيجارية ═══
-  const tenantAuthIdx = text.indexOf('صالحيات المستأجر') !== -1
-    ? text.indexOf('صالحيات المستأجر')
-    : text.indexOf('Tenant Authority');
+  const tenantAuthIdx = source.indexOf('صلاحيات المستأجر') !== -1
+    ? source.indexOf('صلاحيات المستأجر')
+    : source.indexOf('Tenant Authority');
 
   if (unitsIdx !== -1) {
-    const unitSection = text.slice(unitsIdx, tenantAuthIdx !== -1 ? tenantAuthIdx : unitsIdx + 600);
+    const unitSection = source.slice(unitsIdx, tenantAuthIdx !== -1 ? tenantAuthIdx : unitsIdx + 600);
     c.unitType = cleanExtractedValue(capture(unitSection, 'نوع الوحدة:', 'Unit Type'));
     c.unitNumber = cleanExtractedValue(capture(unitSection, 'رقم الوحدة:', 'Unit No.'));
     c.unitFloor = cleanExtractedValue(capture(unitSection, 'رقم الطابق:', 'Floor No.'));
@@ -346,20 +365,16 @@ function parseEjarPdfText(text: string): EjarPdfContract {
   }
 
   // ═══ 11: المالية ═══
-  const scheduleIdx = text.indexOf('جدول سداد الُّدفعات') !== -1
-    ? text.indexOf('جدول سداد الُّدفعات')
-    : text.indexOf('جدول سداد الدفعات') !== -1
-    ? text.indexOf('جدول سداد الدفعات')
-    : text.indexOf('Rent Payments Schedule');
+  const scheduleIdx = source.indexOf('جدول سداد الدفعات') !== -1
+    ? source.indexOf('جدول سداد الدفعات')
+    : source.indexOf('Rent Payments Schedule');
 
-  const finDataIdx = text.indexOf('البيانات المالَّية') !== -1
-    ? text.indexOf('البيانات المالَّية')
-    : text.indexOf('البيانات المالية') !== -1
-    ? text.indexOf('البيانات المالية')
-    : text.indexOf('Financial Data');
+  const finDataIdx = source.indexOf('البيانات المالية') !== -1
+    ? source.indexOf('البيانات المالية')
+    : source.indexOf('Financial Data');
 
   if (finDataIdx !== -1) {
-    const finSection = text.slice(finDataIdx, scheduleIdx !== -1 ? scheduleIdx : finDataIdx + 600);
+    const finSection = source.slice(finDataIdx, scheduleIdx !== -1 ? scheduleIdx : finDataIdx + 600);
     c.annualRent = extractNumberValue(capture(finSection, 'قيمة اإليجار', 'Annual Rent', 'قيمة الإيجار'));
     c.securityDeposit = extractNumberValue(capture(finSection, 'مبلغ الَّضمان', 'Security Deposit'));
     c.electricityAmount = extractNumberValue(capture(finSection, 'أجرة الكهرباء', 'Electricity Annual'));
