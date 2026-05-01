@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { Link } from 'react-router-dom';
+import { base44 } from '@/lib/base44Client';
+import { Link } from 'wouter';
 import {
   Settings, Plug, Unlink, Loader2, CheckCircle, XCircle,
   ExternalLink, MessageSquare, DollarSign, FileText, RefreshCw
@@ -157,7 +157,7 @@ export default function IntegrationSettings() {
   const totalConnected = [ejarConnected, true, true, true, true, true].filter(Boolean).length;
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6 max-w-6xl mx-auto px-4 py-6" dir="rtl">
 
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
