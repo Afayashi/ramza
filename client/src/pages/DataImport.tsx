@@ -1,130 +1,349 @@
-/*
- * استيراد البيانات - رمز الإبداع
- */
-import { useState } from 'react';
-import { Database, Upload, FileText, CheckCircle, AlertTriangle, Download } from 'lucide-react';
+import React, { useState, useRef, useCallback } from 'react';
+import * as XLSX from 'xlsx';
+import {
+  Upload, CheckCircle, XCircle, FileText, Trash2, Database,
+  RefreshCw, Loader2, AlertTriangle, Download, Eye,
+} from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import PageHeader from '@/components/shared/PageHeader';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
-const ENTITIES = [
-  { id: 'Property', label: 'العقارات', fields: 'اسم العقار، النوع، العنوان، المدينة، عدد الوحدات' },
-  { id: 'Unit', label: 'الوحدات', fields: 'رقم الوحدة، العقار، النوع، المساحة، الإيجار الشهري' },
-  { id: 'Tenant', label: 'المستأجرون', fields: 'الاسم، رقم الهوية، الهاتف، البريد، الجنسية' },
-  { id: 'Lease', label: 'العقود', fields: 'رقم العقد، المستأجر، الوحدة، تاريخ البداية، تاريخ النهاية، الإيجار' },
-  { id: 'Payment', label: 'الدفعات', fields: 'المستأجر، المبلغ، تاريخ الدفع، الحالة، طريقة الدفع' },
-  { id: 'Expense', label: 'المصروفات', fields: 'الوصف، المبلغ، التاريخ، الفئة، العقار' },
-  { id: 'Owner', label: 'الملاك', fields: 'الاسم، رقم الهوية، الهاتف، البريد، رقم الحساب' },
+// ── Constants ──────────────────────────────────────────────────────────────────
+const DARK = '#1a1a1a';
+const GOLD = '#C8A951';
+
+// كيف نخزن البيانات في localStorage
+const LS_KEYS: Record<string, string> = {
+  properties: 'real_properties',
+  units:      'real_units',
+  contracts:  'real_contracts',
+  users:      'real_users',
+  financial:  'real_financial',
+};
+
+// تعريف ملفات إيجار المتوقعة
+const EJAR_FILES = [
+  { key: 'properties', label: 'العقارات',    icon: '🏢', hint: 'properties.report',  color: 'bg-blue-50 border-blue-200 text-blue-700' },
+  { key: 'units',      label: 'الوحدات',     icon: '🛏️', hint: 'units.report',       color: 'bg-purple-50 border-purple-200 text-purple-700' },
+  { key: 'contracts',  label: 'العقود',      icon: '📄', hint: 'contracts.report',   color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+  { key: 'users',      label: 'المستخدمون',  icon: '👤', hint: 'bo_users',            color: 'bg-amber-50 border-amber-200 text-amber-700' },
+  { key: 'financial',  label: 'المالية',     icon: '💰', hint: 'financial.report',   color: 'bg-rose-50 border-rose-200 text-rose-700' },
 ];
 
-export default function DataImport() {
-  const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
-  const [importStatus, setImportStatus] = useState<'idle' | 'uploading' | 'processing' | 'done' | 'error'>('idle');
+// قراءة البيانات المستوردة
+function loadReal(key: string) {
+  try { const r = localStorage.getItem(LS_KEYS[key]); return r ? JSON.parse(r) : null; } catch { return null; }
+}
+function saveReal(key: string, rows: object[]) {
+  try { localStorage.setItem(LS_KEYS[key], JSON.stringify(rows)); } catch {}
+}
+function clearReal(key: string) {
+  try { localStorage.removeItem(LS_KEYS[key]); } catch {}
+}
+// إزالة البيانات التجريبية العامة
+function clearAllDemo() {
+  ['ejar_settings', 'ejar_api_creds'].forEach(k => {
+    // لا تمسح بيانات الربط
+  });
+  // مسح أي كاش تجريبي قديم
+  Object.keys(localStorage).filter(k => k.startsWith('demo_')).forEach(k => localStorage.removeItem(k));
+}
 
-  const handleFileUpload = () => {
-    if (!selectedEntity) { toast.error('اختر نوع البيانات أولاً'); return; }
-    setImportStatus('uploading');
-    setTimeout(() => { setImportStatus('processing'); }, 1000);
-    setTimeout(() => { setImportStatus('done'); toast.success('تم استيراد البيانات بنجاح (تجريبي)'); }, 2500);
-  };
+// ── FileCard ───────────────────────────────────────────────────────────────────
+type FileState = { rows: object[]; sheetName: string; fileName: string } | null;
 
-  const handleDownloadTemplate = () => {
-    toast.info('سيتم تحميل قالب Excel (ميزة قادمة)');
+interface FileCardProps {
+  fileKey: string;
+  label: string;
+  icon: string;
+  hint: string;
+  color: string;
+  state: FileState;
+  onFile: (key: string, rows: object[], sheetName: string, fileName: string) => void;
+  onClear: (key: string) => void;
+  onPreview: (key: string) => void;
+}
+
+function FileCard({ fileKey, label, icon, hint, color, state, onFile, onClear, onPreview }: FileCardProps) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    setLoading(true);
+    try {
+      const buf  = await file.arrayBuffer();
+      const wb   = XLSX.read(buf, { type: 'array', cellText: true, cellDates: true });
+      const sheet = wb.SheetNames[0];
+
+      // قراءة الصفوف كمصفوفات خام للتعامل مع ترويسة إيجار المتعددة الصفوف
+      const raw = XLSX.utils.sheet_to_json(wb.Sheets[sheet], { defval: '', header: 1 }) as any[][];
+
+      // ابحث عن صف الرؤوس الحقيقية: أول صف يحتوي على نص عربي في أكثر من عمود
+      let headerIdx = -1;
+      for (let i = 0; i < Math.min(raw.length, 10); i++) {
+        const row = raw[i] as any[];
+        const meaningfulCols = row.filter(c => typeof c === 'string' && c.trim().length > 1 && !/^\d{4}/.test(c) && c !== '');
+        if (meaningfulCols.length >= 3) { headerIdx = i; break; }
+      }
+      if (headerIdx === -1) headerIdx = 0;
+
+      const headerRow = (raw[headerIdx] as any[]).map((h: any) =>
+        typeof h === 'string' ? h.trim().replace(/\s+/g, '_') : String(h)
+      );
+      const dataRows = raw.slice(headerIdx + 1).filter(row =>
+        (row as any[]).some((c: any) => c !== '' && c !== null && c !== undefined)
+      );
+
+      const rows = dataRows.map((row: any[], rowIdx: number) => {
+        const obj: Record<string, any> = { id: `imported_${rowIdx + 1}` };
+        headerRow.forEach((key, i) => { if (key) obj[key] = row[i] ?? ''; });
+        return obj;
+      }).filter(r => Object.values(r).some(v => v !== '' && v !== null));
+
+      if (!rows.length) throw new Error('الملف فارغ');
+      onFile(fileKey, rows, sheet, file.name);
+      toast.success(`✓ تم قراءة ${rows.length} سجل من "${file.name}"`);
+    } catch (err: any) {
+      toast.error(`خطأ في قراءة الملف: ${err.message}`);
+    }
+    setLoading(false);
+    e.target.value = '';
   };
 
   return (
-    <DashboardLayout pageTitle="استيراد البيانات">
-      <PageHeader title="استيراد البيانات" description="استيراد البيانات من ملفات Excel أو CSV" />
+    <div className={`rounded-2xl border-2 p-4 transition-all ${state ? 'border-emerald-300 bg-emerald-50' : 'border-dashed border-gray-200 bg-white hover:border-gray-300'}`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">{icon}</span>
+          <div>
+            <p className="font-black text-gray-900 text-sm">{label}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{hint}*.xlsx</p>
+          </div>
+        </div>
+        {state && (
+          <div className="flex items-center gap-1">
+            <button onClick={() => onPreview(fileKey)} title="معاينة"
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-blue-500 hover:bg-blue-50 transition">
+              <Eye className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => onClear(fileKey)} title="حذف"
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 transition">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* اختيار نوع البيانات */}
-        <div className="lg:col-span-1">
-          <h3 className="font-bold text-xs text-foreground mb-3">اختر نوع البيانات</h3>
-          <div className="space-y-1.5">
-            {ENTITIES.map(e => (
-              <button key={e.id} onClick={() => { setSelectedEntity(e.id); setImportStatus('idle'); }}
-                className={`w-full text-right p-3 rounded-xl border transition-all ${selectedEntity === e.id ? 'bg-primary/10 border-primary/30' : 'bg-card border-border hover:border-primary/20'}`}>
-                <p className="font-bold text-xs text-foreground">{e.label}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{e.fields}</p>
-              </button>
-            ))}
+      {state ? (
+        <div className="flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-emerald-700 truncate">{state.fileName}</p>
+            <p className="text-[10px] text-gray-500">{state.rows.length} سجل — ورقة: {state.sheetName}</p>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => ref.current?.click()} disabled={loading}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold border border-dashed transition disabled:opacity-60"
+          style={{ borderColor: GOLD, color: DARK }}>
+          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+          {loading ? 'جاري القراءة...' : 'اختر الملف'}
+        </button>
+      )}
+      <input ref={ref} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleChange} />
+    </div>
+  );
+}
+
+// ── Preview Modal ──────────────────────────────────────────────────────────────
+function PreviewModal({ fileKey, files, onClose }: { fileKey: string; files: Record<string, FileState>; onClose: () => void }) {
+  const state = files[fileKey]; if (!state) return null;
+  const headers = state.rows.length ? Object.keys(state.rows[0]) : [];
+  const preview = state.rows.slice(0, 10);
+  const label = EJAR_FILES.find(f => f.key === fileKey)?.label || fileKey;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[85vh] flex flex-col" dir="rtl">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div>
+            <h2 className="font-black text-gray-900">معاينة: {label}</h2>
+            <p className="text-xs text-gray-400">{state.rows.length} سجل — أول 10 صفوف</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 transition text-lg font-bold">×</button>
+        </div>
+        <div className="overflow-auto flex-1 p-4">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="bg-gray-50">
+                {headers.map(h => (
+                  <th key={h} className="px-3 py-2 text-right font-bold text-gray-700 border border-gray-200 whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {preview.map((row, i) => (
+                <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                  {headers.map(h => (
+                    <td key={h} className="px-3 py-1.5 text-gray-700 border border-gray-100 whitespace-nowrap max-w-40 truncate">
+                      {String((row as any)[h] ?? '')}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page ──────────────────────────────────────────────────────────────────
+export default function DataImport() {
+  const [files, setFiles] = useState<Record<string, FileState>>(() => {
+    const init: Record<string, FileState> = {};
+    EJAR_FILES.forEach(f => {
+      const stored = loadReal(f.key);
+      if (stored?.length) init[f.key] = { rows: stored, sheetName: 'محفوظ', fileName: 'بيانات محفوظة مسبقاً' };
+      else init[f.key] = null;
+    });
+    return init;
+  });
+  const [preview,  setPreview]  = useState<string | null>(null);
+  const [saving,   setSaving]   = useState(false);
+  const [saved,    setSaved]    = useState(false);
+
+  const handleFile = useCallback((key: string, rows: object[], sheetName: string, fileName: string) => {
+    setFiles(prev => ({ ...prev, [key]: { rows, sheetName, fileName } }));
+    setSaved(false);
+  }, []);
+
+  const handleClear = useCallback((key: string) => {
+    clearReal(key);
+    setFiles(prev => ({ ...prev, [key]: null }));
+    setSaved(false);
+    toast.info('تم حذف البيانات المستوردة');
+  }, []);
+
+  const handleSaveAll = async () => {
+    const loaded = EJAR_FILES.filter(f => files[f.key]);
+    if (!loaded.length) { toast.error('لم يتم تحميل أي ملف بعد'); return; }
+    setSaving(true);
+    clearAllDemo();
+    await new Promise(r => setTimeout(r, 500));
+    loaded.forEach(f => {
+      if (files[f.key]) saveReal(f.key, files[f.key]!.rows);
+    });
+    setSaving(false);
+    setSaved(true);
+    toast.success(`✓ تم حفظ بيانات ${loaded.length} ملفات كبيانات حقيقية`);
+  };
+
+  const totalRecords = EJAR_FILES.reduce((s, f) => s + (files[f.key]?.rows.length ?? 0), 0);
+  const loadedCount  = EJAR_FILES.filter(f => files[f.key]).length;
+
+  return (
+    <DashboardLayout pageTitle="استيراد بيانات إيجار">
+      <div className="p-5 space-y-5 max-w-4xl mx-auto" dir="rtl">
+
+        {/* Header */}
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-xl font-black text-gray-900">استيراد بيانات منصة إيجار</h1>
+            <p className="text-gray-500 text-sm mt-0.5">ارفع ملفات Excel المُصدَّرة من إيجار لاستيراد بياناتك الحقيقية</p>
+          </div>
+          {loadedCount > 0 && (
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">
+              <Database className="w-3.5 h-3.5" />
+              {totalRecords.toLocaleString('ar')} سجل جاهز
+            </span>
+          )}
+        </div>
+
+        {/* إرشادات */}
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-800">
+            <p className="font-black mb-1">كيفية تصدير الملفات من منصة إيجار:</p>
+            <ol className="space-y-0.5 list-decimal list-inside text-xs">
+              <li>سجّل دخولك على <strong>ejar.sa</strong></li>
+              <li>اذهب لكل قسم (العقارات، الوحدات، العقود...) وانقر "تصدير Excel"</li>
+              <li>ارفع الملفات هنا — النظام سيتعرف عليها تلقائياً</li>
+            </ol>
           </div>
         </div>
 
-        {/* منطقة الرفع */}
-        <div className="lg:col-span-2">
-          {!selectedEntity ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center bg-card border border-border rounded-xl">
-              <Database size={40} className="text-muted-foreground mb-3" />
-              <p className="text-sm text-muted-foreground">اختر نوع البيانات لبدء الاستيراد</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="bg-card border border-border rounded-xl p-6">
-                <h3 className="font-bold text-sm text-foreground mb-4">استيراد {ENTITIES.find(e => e.id === selectedEntity)?.label}</h3>
-
-                {/* تحميل القالب */}
-                <div className="bg-sidebar rounded-xl p-4 mb-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-medium text-foreground">تحميل قالب Excel</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">حمل القالب واملأه بالبيانات ثم ارفعه</p>
-                    </div>
-                    <Button size="sm" variant="outline" onClick={handleDownloadTemplate}>
-                      <Download size={14} className="ml-1" /> تحميل القالب
-                    </Button>
-                  </div>
-                </div>
-
-                {/* منطقة الرفع */}
-                <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${importStatus === 'done' ? 'border-emerald-500/30 bg-emerald-500/5' : importStatus === 'error' ? 'border-red-500/30 bg-red-500/5' : 'border-border hover:border-primary/30'}`}>
-                  {importStatus === 'idle' && (
-                    <>
-                      <Upload size={32} className="mx-auto text-muted-foreground mb-3" />
-                      <p className="text-sm text-foreground mb-1">اسحب الملف هنا أو</p>
-                      <Button size="sm" onClick={handleFileUpload}>اختر ملف</Button>
-                      <p className="text-[10px] text-muted-foreground mt-2">يدعم: Excel (.xlsx, .xls) و CSV</p>
-                    </>
-                  )}
-                  {importStatus === 'uploading' && (
-                    <>
-                      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                      <p className="text-sm text-foreground">جاري رفع الملف...</p>
-                    </>
-                  )}
-                  {importStatus === 'processing' && (
-                    <>
-                      <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                      <p className="text-sm text-foreground">جاري معالجة البيانات...</p>
-                    </>
-                  )}
-                  {importStatus === 'done' && (
-                    <>
-                      <CheckCircle size={32} className="mx-auto text-emerald-400 mb-3" />
-                      <p className="text-sm text-emerald-400 font-bold">تم الاستيراد بنجاح</p>
-                      <Button size="sm" variant="outline" className="mt-3" onClick={() => setImportStatus('idle')}>استيراد ملف آخر</Button>
-                    </>
-                  )}
-                  {importStatus === 'error' && (
-                    <>
-                      <AlertTriangle size={32} className="mx-auto text-red-400 mb-3" />
-                      <p className="text-sm text-red-400 font-bold">فشل الاستيراد</p>
-                      <Button size="sm" variant="outline" className="mt-3" onClick={() => setImportStatus('idle')}>إعادة المحاولة</Button>
-                    </>
-                  )}
-                </div>
-
-                {/* الحقول المتوقعة */}
-                <div className="mt-4 bg-sidebar rounded-xl p-4">
-                  <h4 className="text-xs font-bold text-foreground mb-2 flex items-center gap-2"><FileText size={12} /> الحقول المتوقعة</h4>
-                  <p className="text-[11px] text-muted-foreground">{ENTITIES.find(e => e.id === selectedEntity)?.fields}</p>
-                </div>
-              </div>
-            </div>
-          )}
+        {/* بطاقات الملفات */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {EJAR_FILES.map(f => (
+            <FileCard
+              key={f.key}
+              fileKey={f.key}
+              label={f.label}
+              icon={f.icon}
+              hint={f.hint}
+              color={f.color}
+              state={files[f.key]}
+              onFile={handleFile}
+              onClear={handleClear}
+              onPreview={setPreview}
+            />
+          ))}
         </div>
+
+        {/* ملخص + حفظ */}
+        {loadedCount > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h2 className="font-black text-gray-900 text-sm mb-4">ملخص البيانات المحمّلة</h2>
+            <div className="grid grid-cols-5 gap-3 mb-5">
+              {EJAR_FILES.map(f => {
+                const count = files[f.key]?.rows.length ?? 0;
+                return (
+                  <div key={f.key} className={`rounded-xl p-3 text-center border ${count ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-100'}`}>
+                    <p className="text-2xl mb-1">{f.icon}</p>
+                    <p className={`text-xl font-black ${count ? 'text-emerald-700' : 'text-gray-400'}`}>{count.toLocaleString('ar')}</p>
+                    <p className="text-[10px] text-gray-500">{f.label}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-3">
+              <button onClick={handleSaveAll} disabled={saving}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-black text-sm text-white transition disabled:opacity-60"
+                style={{ background: saved ? '#059669' : DARK }}>
+                {saving
+                  ? <><Loader2 className="w-4 h-4 animate-spin" />جاري الحفظ...</>
+                  : saved
+                    ? <><CheckCircle className="w-4 h-4" />تم الحفظ بنجاح</>
+                    : <><Database className="w-4 h-4" />حفظ البيانات الحقيقية</>}
+              </button>
+              <button onClick={() => {
+                EJAR_FILES.forEach(f => { handleClear(f.key); });
+                setSaved(false);
+              }}
+                className="px-4 py-3 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 text-sm font-bold transition flex items-center gap-2">
+                <Trash2 className="w-4 h-4" /> حذف الكل
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* حالة فارغة */}
+        {loadedCount === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-dashed border-gray-200">
+            <Database size={48} className="text-gray-200 mb-4" />
+            <p className="font-bold text-gray-400 text-sm">لم يتم تحميل أي ملفات بعد</p>
+            <p className="text-xs text-gray-300 mt-1">ارفع ملفات Excel من إيجار أعلاه</p>
+          </div>
+        )}
       </div>
+
+      {/* Preview Modal */}
+      {preview && (
+        <PreviewModal fileKey={preview} files={files} onClose={() => setPreview(null)} />
+      )}
     </DashboardLayout>
   );
 }

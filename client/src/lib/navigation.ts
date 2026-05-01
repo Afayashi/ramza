@@ -104,6 +104,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'تقارير العائد', path: '/roi-reports' },
       { label: 'أداء العقارات', path: '/property-performance' },
       { label: 'تقرير عقار منفرد', path: '/property-single-report' },
+      { label: 'نموذج تقرير العقار الرسمي', path: '/property-official-report' },
       { label: 'تقارير الإشغال', path: '/occupancy-report' },
       { label: 'الدراسة السوقية', path: '/market-research' },
       { label: 'مركز الطباعة', path: '/print-center' },
@@ -129,6 +130,8 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'الإعدادات العامة', path: '/settings' },
       { label: 'إعدادات الشركة', path: '/company-settings' },
+      { label: 'التكاملات', path: '/integrations' },
+      { label: 'قاعدة البيانات Supabase', path: '/database-setup' },
       { label: 'إدارة المستخدمين', path: '/user-management' },
       { label: 'استيراد البيانات', path: '/data-import' },
       { label: 'النسخ الاحتياطي', path: '/backup' },

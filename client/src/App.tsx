@@ -67,6 +67,7 @@ import FinancialForecasting from "./pages/FinancialForecasting";
 import ROI from "./pages/ROI";
 import PropertyPerformance from "./pages/PropertyPerformance";
 import PropertySingleReport from "./pages/PropertySingleReport";
+import PropertyOfficialReport from "./pages/PropertyOfficialReport";
 import MarketResearch from "./pages/MarketResearch";
 import PrintCenter from "./pages/PrintCenter";
 import OccupancyReport from "./pages/OccupancyReport";
@@ -85,12 +86,23 @@ import CRM from "./pages/CRM";
 import Settings from "./pages/Settings";
 import DataImport from "./pages/DataImport";
 import SystemGuide from "./pages/SystemGuide";
+import DatabaseSetup from "./pages/DatabaseSetup";
 import Backup from "./pages/Backup";
 import ActivityLog from "./pages/ActivityLog";
 import UserManagement from "./pages/UserManagement";
 import CompanySettings from "./pages/CompanySettings";
 import RentManagement from "./pages/RentManagement";
 import Ejar from "./pages/Ejar";
+import Integrations from "./pages/Integrations";
+
+// Integration Settings Pages
+import IntegrationEjarSettings from "./pages/IntegrationEjarSettings";
+import IntegrationWhatsAppSettings from "./pages/IntegrationWhatsAppSettings";
+import IntegrationEmailSettings from "./pages/IntegrationEmailSettings";
+import IntegrationStripeSettings from "./pages/IntegrationStripeSettings";
+import IntegrationSMSSettings from "./pages/IntegrationSMSSettings";
+import IntegrationGoogleSettings from "./pages/IntegrationGoogleSettings";
+import IntegrationSlackSettings from "./pages/IntegrationSlackSettings";
 
 function Router() {
   return (
@@ -152,6 +164,7 @@ function Router() {
       <Route path="/roi-reports" component={ROI} />
       <Route path="/property-performance" component={PropertyPerformance} />
       <Route path="/property-single-report" component={PropertySingleReport} />
+      <Route path="/property-official-report" component={PropertyOfficialReport} />
       <Route path="/market-research" component={MarketResearch} />
       <Route path="/print-center" component={PrintCenter} />
       <Route path="/occupancy-report" component={OccupancyReport} />
@@ -170,12 +183,21 @@ function Router() {
       <Route path="/settings" component={Settings} />
       <Route path="/data-import" component={DataImport} />
       <Route path="/system-guide" component={SystemGuide} />
+      <Route path="/database-setup" component={DatabaseSetup} />
       <Route path="/backup" component={Backup} />
       <Route path="/activity-log" component={ActivityLog} />
       <Route path="/user-management" component={UserManagement} />
       <Route path="/company-settings" component={CompanySettings} />
       <Route path="/rent-management" component={RentManagement} />
       <Route path="/ejar" component={Ejar} />
+      <Route path="/integrations" component={Integrations} />
+      <Route path="/integrations/ejar" component={IntegrationEjarSettings} />
+      <Route path="/integrations/whatsapp" component={IntegrationWhatsAppSettings} />
+      <Route path="/integrations/email" component={IntegrationEmailSettings} />
+      <Route path="/integrations/stripe" component={IntegrationStripeSettings} />
+      <Route path="/integrations/sms" component={IntegrationSMSSettings} />
+      <Route path="/integrations/google" component={IntegrationGoogleSettings} />
+      <Route path="/integrations/slack" component={IntegrationSlackSettings} />
 
       {/* 404 */}
       <Route path="/404" component={NotFound} />

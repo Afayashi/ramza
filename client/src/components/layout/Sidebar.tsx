@@ -3,14 +3,14 @@
  * تصميم داكن مع لمسات ذهبية، على الجانب الأيمن
  * متجاوبة مع الجوال
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { ChevronDown, X, Phone, LogOut, LogIn, Wifi, WifiOff } from 'lucide-react';
 import { NAV_GROUPS } from '@/lib/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
-const LOGO_URL = '/manus-storage/ramz-logo_23a7522a.png';
+const LOGO_URL = '/brand/ramz-logo.svg';
 const GOLD = '#C8A951';
 
 interface SidebarProps {
@@ -22,6 +22,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [location] = useLocation();
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['الرئيسية']);
   const { user, isAuthenticated, logout, navigateToLogin } = useAuth();
+
+  // تحقق من وجود بيانات حقيقية مستوردة من إيجار
+  const [hasRealData, setHasRealData] = useState(false);
+  useEffect(() => {
+    const keys = ['real_properties', 'real_units', 'real_contracts', 'real_users', 'real_financial'];
+    const found = keys.some(k => { try { const v = localStorage.getItem(k); return !!v && JSON.parse(v).length > 0; } catch { return false; } });
+    setHasRealData(found);
+  }, []);
 
   const toggleGroup = (label: string) => {
     setExpandedGroups(prev =>
@@ -150,6 +158,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               <>
                 <Wifi size={12} className="text-green-400" />
                 <span className="text-[10px] text-green-400">متصل بقاعدة البيانات</span>
+              </>
+            ) : hasRealData ? (
+              <>
+                <Wifi size={12} className="text-emerald-400" />
+                <span className="text-[10px] text-emerald-400">بيانات إيجار الحقيقية</span>
               </>
             ) : (
               <>

@@ -3,8 +3,8 @@
  * عرض وإدارة جميع العقارات مع بحث وفلترة ونماذج CRUD
  */
 import { useState } from 'react';
-import { Link } from 'wouter';
-import { Building2, Plus, Search, Eye, Pencil, Trash2, Star, MapPin, Home } from 'lucide-react';
+import { Link, useLocation } from 'wouter';
+import { Building2, Plus, Search, Eye, Pencil, Trash2, Star, MapPin, Home, FileText } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
@@ -28,8 +28,17 @@ export default function Properties() {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
 
-  const getUnitsForProperty = (propertyId: string) => {
-    return units.filter(u => u['معرف_العقار'] === propertyId || u.property_id === propertyId);
+  // ربط الوحدات بالعقارات عبر رقم_وثيقة_الملكية أو اسم_العقار
+  const getUnitsForProperty = (property: any) => {
+    const deed = String(property['رقم_وثيقة_الملكية'] ?? '').trim();
+    const name = String(property['اسم_العقار'] ?? '').trim();
+    const id   = property.id;
+    return units.filter(u => {
+      if (deed && String(u['رقم_وثيقة_الملكية'] ?? '').trim() === deed) return true;
+      if (name && String(u['اسم_العقار'] ?? '').trim() === name) return true;
+      if (id   && (u['معرف_العقار'] === id || u.property_id === id)) return true;
+      return false;
+    });
   };
 
   const filtered = properties.filter(p => {
@@ -75,10 +84,18 @@ export default function Properties() {
         title="العقارات والوحدات"
         description={`${properties.length} عقار — ${units.length} وحدة`}
       >
-        <Button size="sm" className="gap-2" onClick={handleAdd}>
-          <Plus size={16} />
-          إضافة عقار
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link href="/property-form">
+            <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border border-yellow-400 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 transition">
+              <FileText size={14} />
+              نموذج متكامل
+            </button>
+          </Link>
+          <Button size="sm" className="gap-2" onClick={handleAdd}>
+            <Plus size={16} />
+            إضافة سريعة
+          </Button>
+        </div>
       </PageHeader>
 
       {loading ? (
@@ -114,7 +131,7 @@ export default function Properties() {
           {view === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map(property => {
-                const propUnits = getUnitsForProperty(property.id);
+                const propUnits = getUnitsForProperty(property);
                 const rented = propUnits.filter(u => u['حالة_الوحدة'] === 'مؤجرة' || u.status === 'occupied').length;
                 const name = property['اسم_العقار'] || property.name || 'عقار بدون اسم';
                 const city = property['المدينة'] || property.city || '';
@@ -154,6 +171,9 @@ export default function Properties() {
                         <Link href={`/property-detail?id=${property.id}`} className="flex-1">
                           <Button variant="outline" size="sm" className="w-full gap-1 text-xs h-8"><Eye size={13} /> عرض</Button>
                         </Link>
+                        <Link href="/property-form">
+                          <button title="تعديل كامل" className="p-1.5 rounded-md hover:bg-yellow-50 text-yellow-600 transition-colors"><FileText size={14} /></button>
+                        </Link>
                         <button onClick={() => handleEdit(property)} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Pencil size={14} /></button>
                         <button onClick={() => handleDelete(property.id)} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
                       </div>
@@ -168,7 +188,7 @@ export default function Properties() {
                 { key: 'اسم_العقار', label: 'اسم العقار', render: (v, r) => v || r.name || 'بدون اسم' },
                 { key: 'نوع_العقار', label: 'النوع', render: (v, r) => v || r.type || '—' },
                 { key: 'المدينة', label: 'المدينة', render: (v, r) => v || r.city || '—' },
-                { key: 'id', label: 'الوحدات', render: (v) => `${getUnitsForProperty(v).length} وحدة` },
+                { key: 'id', label: 'الوحدات', render: (_v, row) => `${getUnitsForProperty(row).length} وحدة` },
               ]}
               data={filtered}
               searchable={false}

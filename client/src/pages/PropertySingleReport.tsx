@@ -7,8 +7,10 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import PageHeader from '@/components/shared/PageHeader';
 import { LoadingState, EmptyState } from '@/components/shared/PageStates';
 import { useMultiEntityData } from '@/hooks/useEntityData';
+import { useLocation } from 'wouter';
 
 export default function PropertySingleReport() {
+  const [, setLocation] = useLocation();
   const { data, loading } = useMultiEntityData([{ name: 'Property' }, { name: 'Unit' }, { name: 'Payment' }, { name: 'Expense' }, { name: 'Maintenance' }]);
   const [selectedId, setSelectedId] = useState<string>('');
 
@@ -32,6 +34,14 @@ export default function PropertySingleReport() {
   return (
     <DashboardLayout pageTitle="تقرير عقار منفرد">
       <PageHeader title="تقرير عقار منفرد" description="اختر عقاراً لعرض تقريره المفصل" />
+
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <button
+          onClick={() => setLocation(selectedId ? `/property-official-report?propertyId=${selectedId}` : '/property-official-report')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-[#C8A951] text-black font-medium hover:bg-[#b8973f] transition-all">
+          <FileText size={11} /> نموذج التقرير الرسمي
+        </button>
+      </div>
 
       <div className="flex flex-wrap gap-2 mb-6">
         {properties.map(p => (

@@ -1,4 +1,20 @@
 /*
+ * بيانات رمز الإبداع
+ * تُستخدم فقط كاحتياطي عند عدم وجود بيانات مستوردة من إيجار
+ * لاستيراد بياناتك الحقيقية اذهب إلى: /data-import
+ */
+
+// ── قراءة البيانات الحقيقية المستوردة من إيجار ──────────────────────────────────
+function realData(key: string) {
+  try { const r = localStorage.getItem('real_' + key); return r ? JSON.parse(r) : null; } catch { return null; }
+}
+
+export const REAL_PROPERTIES: object[] | null = typeof window !== 'undefined' ? realData('properties') : null;
+export const REAL_UNITS:      object[] | null = typeof window !== 'undefined' ? realData('units')      : null;
+export const REAL_CONTRACTS:  object[] | null = typeof window !== 'undefined' ? realData('contracts')  : null;
+export const REAL_USERS:      object[] | null = typeof window !== 'undefined' ? realData('users')      : null;
+export const REAL_FINANCIAL:  object[] | null = typeof window !== 'undefined' ? realData('financial')  : null;
+/*
  * بيانات تجريبية - رمز الإبداع
  * تُستخدم عند عدم توفر الاتصال بـ Base44
  */
@@ -93,3 +109,4 @@ export const DEMO_COMPLAINTS = [
   { id: 'c2', 'عنوان_الشكوى': 'مشكلة في مواقف السيارات', 'اسم_المستأجر': 'فهد عبدالله الشمري', status: 'قيد_المعالجة', created_date: `${thisMonth}-08` },
   { id: 'c3', 'عنوان_الشكوى': 'تأخر في إصلاح التكييف', 'اسم_المستأجر': 'خالد سعد القحطاني', status: 'محلولة', created_date: `${lastMonth}-25` },
 ];
+
