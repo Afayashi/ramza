@@ -185,17 +185,49 @@ function capture(text: string, ...markers: string[]): string {
   return '';
 }
 
+// تنظيف القيم المستخرجة من PDF (تقليل الكلمات الإنجليزية الضوضائية)
+function cleanExtractedValue(value?: string): string {
+  if (!value) return '';
+  return value
+    .replace(/\s+/g, ' ')
+    .replace(/(?:Last Rent Payment|Regular Rent Payment|Total Contract value|Annual Rent|Amount|Cont|Num)/gi, '')
+    .replace(/[|]/g, ' ')
+    .trim();
+}
+
+function extractNumberValue(value?: string): string {
+  if (!value) return '';
+  const cleaned = cleanExtractedValue(value).replace(/,/g, '');
+  const m = cleaned.match(/\d+(?:\.\d+)?/);
+  return m ? m[0] : '';
+}
+
+function normalizeYesNo(value?: string): string {
+  const v = (value || '').toLowerCase().trim();
+  if (!v) return '';
+  if (['yes', 'true', '1', 'نعم', 'مؤثثة'].includes(v)) return 'نعم';
+  if (['no', 'false', '0', 'لا', 'غير مؤثثة'].includes(v)) return 'لا';
+  return cleanExtractedValue(value);
+}
+
+function formatSar(value?: string): string {
+  if (!value) return '';
+  const n = Number(String(value).replace(/,/g, ''));
+  if (Number.isNaN(n)) return cleanExtractedValue(value);
+  return `${n.toLocaleString('ar-SA')} ر.س`;
+}
+
 /** استخراج بيانات عقد إيجار من نص PDF */
 function parseEjarPdfText(text: string): EjarPdfContract {
   const c: EjarPdfContract = { rawText: text };
 
   // ═══ 1: بيانات العقد ═══
   c.contractNumber = capture(text, 'رقم سجل العقد:', 'Contract No.', 'No Contract');
-  c.contractType = capture(text, 'نوع العقد:', 'Type Contract', 'Contract Type');
-  c.contractDate = capture(text, 'تاريخ إبرام العقد:', 'Contract Sealing Date', 'Sealing Date');
-  c.contractLocation = capture(text, 'مكان إبرام العقد:', 'Sealing Contract Location', 'Location');
-  c.startDate = capture(text, 'تاريخ بداية مَّدة اإليجار:', 'تاريخ بداية مدة الإيجار:', 'Tenancy Start Date');
-  c.endDate = capture(text, 'تاريخ نهاية مَّدة اإليجار:', 'تاريخ نهاية مدة الإيجار:', 'Tenancy End Date');
+  c.contractType = cleanExtractedValue(capture(text, 'نوع العقد:', 'Type Contract', 'Contract Type'));
+  c.contractDate = cleanExtractedValue(capture(text, 'تاريخ إبرام العقد:', 'Contract Sealing Date', 'Sealing Date'));
+  c.contractLocation = cleanExtractedValue(capture(text, 'مكان إبرام العقد:', 'Sealing Contract Location', 'Location'));
+  c.startDate = cleanExtractedValue(capture(text, 'تاريخ بداية مَّدة اإليجار:', 'تاريخ بداية مدة الإيجار:', 'Tenancy Start Date'));
+  c.endDate = cleanExtractedValue(capture(text, 'تاريخ نهاية مَّدة اإليجار:', 'تاريخ نهاية مدة الإيجار:', 'Tenancy End Date'));
 
   // ═══ 2: بيانات المؤجر ═══
   // نبحث عن قسم المؤجر ونستخرج منه
@@ -208,12 +240,12 @@ function parseEjarPdfText(text: string): EjarPdfContract {
 
   if (lessorIdx !== -1) {
     const lessorSection = text.slice(lessorIdx, tenantIdx !== -1 ? tenantIdx : lessorIdx + 500);
-    c.ownerName = capture(lessorSection, 'االسم:', 'الاسم:', 'Name');
-    c.ownerNationality = capture(lessorSection, 'الجنسَّية:', 'الجنسية:', 'Nationality');
-    c.ownerIdType = capture(lessorSection, 'نوع الهوَّية:', 'نوع الهوية:', 'ID Type');
-    c.ownerId = capture(lessorSection, 'رقم الهوَّية:', 'رقم الهوية:', 'ID No.');
-    c.ownerPhone = capture(lessorSection, 'رقم الجَّوال:', 'رقم الجوال:', 'Mobile No.');
-    c.ownerEmail = capture(lessorSection, 'البريد اإللكتروني:', 'البريد الإلكتروني:', 'Email');
+    c.ownerName = cleanExtractedValue(capture(lessorSection, 'االسم:', 'الاسم:', 'Name'));
+    c.ownerNationality = cleanExtractedValue(capture(lessorSection, 'الجنسَّية:', 'الجنسية:', 'Nationality'));
+    c.ownerIdType = cleanExtractedValue(capture(lessorSection, 'نوع الهوَّية:', 'نوع الهوية:', 'ID Type'));
+    c.ownerId = cleanExtractedValue(capture(lessorSection, 'رقم الهوَّية:', 'رقم الهوية:', 'ID No.'));
+    c.ownerPhone = cleanExtractedValue(capture(lessorSection, 'رقم الجَّوال:', 'رقم الجوال:', 'Mobile No.'));
+    c.ownerEmail = cleanExtractedValue(capture(lessorSection, 'البريد اإللكتروني:', 'البريد الإلكتروني:', 'Email'));
   }
 
   // ═══ 4: بيانات المستأجر ═══
@@ -223,12 +255,12 @@ function parseEjarPdfText(text: string): EjarPdfContract {
 
   if (tenantIdx !== -1) {
     const tenantSection = text.slice(tenantIdx, brokerIdx !== -1 ? brokerIdx : tenantIdx + 500);
-    c.tenantName = capture(tenantSection, 'االسم:', 'الاسم:', 'Name');
-    c.tenantNationality = capture(tenantSection, 'الجنسَّية:', 'الجنسية:', 'Nationality');
-    c.tenantIdType = capture(tenantSection, 'نوع الهوَّية:', 'نوع الهوية:', 'ID Type');
-    c.tenantId = capture(tenantSection, 'رقم الهوَّية:', 'رقم الهوية:', 'ID No.');
-    c.tenantPhone = capture(tenantSection, 'رقم الجَّوال:', 'رقم الجوال:', 'Mobile No.');
-    c.tenantEmail = capture(tenantSection, 'البريد اإللكتروني:', 'البريد الإلكتروني:', 'Email');
+    c.tenantName = cleanExtractedValue(capture(tenantSection, 'االسم:', 'الاسم:', 'Name'));
+    c.tenantNationality = cleanExtractedValue(capture(tenantSection, 'الجنسَّية:', 'الجنسية:', 'Nationality'));
+    c.tenantIdType = cleanExtractedValue(capture(tenantSection, 'نوع الهوَّية:', 'نوع الهوية:', 'ID Type'));
+    c.tenantId = cleanExtractedValue(capture(tenantSection, 'رقم الهوَّية:', 'رقم الهوية:', 'ID No.'));
+    c.tenantPhone = cleanExtractedValue(capture(tenantSection, 'رقم الجَّوال:', 'رقم الجوال:', 'Mobile No.'));
+    c.tenantEmail = cleanExtractedValue(capture(tenantSection, 'البريد اإللكتروني:', 'البريد الإلكتروني:', 'Email'));
   }
 
   // ═══ 6: الوساطة ═══
@@ -238,11 +270,11 @@ function parseEjarPdfText(text: string): EjarPdfContract {
 
   if (brokerIdx !== -1) {
     const brokerSection = text.slice(brokerIdx, ownerDocIdx !== -1 ? ownerDocIdx : brokerIdx + 600);
-    c.brokerCompany = capture(brokerSection, 'اسم منشأة الوساطة العقارية:', 'Brokerage Entity Name');
-    c.brokerCR = capture(brokerSection, 'رقم الِّسجل الِّتجاري:', 'رقم السجل التجاري:', 'CR No.');
-    c.brokerName = capture(brokerSection, 'اسم الموظف:', 'Broker Name');
-    c.brokerPhone = capture(brokerSection, 'رقم الجَّوال:', 'رقم الجوال:', 'Mobile No.');
-    c.brokerEmail = capture(brokerSection, 'البريد اإللكتروني:', 'البريد الإلكتروني:', 'Email');
+    c.brokerCompany = cleanExtractedValue(capture(brokerSection, 'اسم منشأة الوساطة العقارية:', 'Brokerage Entity Name'));
+    c.brokerCR = cleanExtractedValue(capture(brokerSection, 'رقم الِّسجل الِّتجاري:', 'رقم السجل التجاري:', 'CR No.'));
+    c.brokerName = cleanExtractedValue(capture(brokerSection, 'اسم الموظف:', 'Broker Name'));
+    c.brokerPhone = cleanExtractedValue(capture(brokerSection, 'رقم الجَّوال:', 'رقم الجوال:', 'Mobile No.'));
+    c.brokerEmail = cleanExtractedValue(capture(brokerSection, 'البريد اإللكتروني:', 'البريد الإلكتروني:', 'Email'));
   }
 
   // ═══ 7: مستندات الملكية ═══
@@ -252,11 +284,11 @@ function parseEjarPdfText(text: string): EjarPdfContract {
 
   if (ownerDocIdx !== -1) {
     const docSection = text.slice(ownerDocIdx, propDataIdx !== -1 ? propDataIdx : ownerDocIdx + 400);
-    c.titleDeedNumber = capture(docSection, 'Title Deed No:', 'رقم المستند:', 'رقم الصك');
-    c.titleDeedIssuer = capture(docSection, 'Issuer:', 'جهة اإلصدار:', 'جهة الإصدار:');
-    c.titleDeedDate = capture(docSection, 'Issue Date:', 'تاريخ اإلصدار:', 'تاريخ الإصدار:');
-    c.titleDeedLocation = capture(docSection, 'Place of Issue:', 'مكان اإلصدار:', 'مكان الإصدار:');
-    c.titleDeedType = capture(docSection, 'Title deed type:', 'نوع الصك:');
+    c.titleDeedNumber = cleanExtractedValue(capture(docSection, 'Title Deed No:', 'رقم المستند:', 'رقم الصك'));
+    c.titleDeedIssuer = cleanExtractedValue(capture(docSection, 'Issuer:', 'جهة اإلصدار:', 'جهة الإصدار:'));
+    c.titleDeedDate = cleanExtractedValue(capture(docSection, 'Issue Date:', 'تاريخ اإلصدار:', 'تاريخ الإصدار:'));
+    c.titleDeedLocation = cleanExtractedValue(capture(docSection, 'Place of Issue:', 'مكان اإلصدار:', 'مكان الإصدار:'));
+    c.titleDeedType = cleanExtractedValue(capture(docSection, 'Title deed type:', 'نوع الصك:'));
   }
 
   // ═══ 8: بيانات العقار ═══
@@ -268,13 +300,13 @@ function parseEjarPdfText(text: string): EjarPdfContract {
 
   if (propDataIdx !== -1) {
     const propSection = text.slice(propDataIdx, unitsIdx !== -1 ? unitsIdx : propDataIdx + 500);
-    c.nationalAddress = capture(propSection, 'العنوان الوطني:', 'National Address');
-    c.propertyType = capture(propSection, 'نوع بناء العقار:', 'Property Type');
-    c.propertyUsage = capture(propSection, 'الغرض من استخدام العقار:', 'Property Usage');
-    c.floorsCount = capture(propSection, 'عدد الطوابق:', 'Number of Floors');
-    c.unitsCount = capture(propSection, 'عدد الوحدات:', 'Number of Units');
-    c.parkingCount = capture(propSection, 'عدد المواقف:', 'Number of Parking');
-    c.elevatorsCount = capture(propSection, 'عدد المصاعد:', 'Number of Elevators');
+    c.nationalAddress = cleanExtractedValue(capture(propSection, 'العنوان الوطني:', 'National Address'));
+    c.propertyType = cleanExtractedValue(capture(propSection, 'نوع بناء العقار:', 'Property Type'));
+    c.propertyUsage = cleanExtractedValue(capture(propSection, 'الغرض من استخدام العقار:', 'Property Usage'));
+    c.floorsCount = cleanExtractedValue(capture(propSection, 'عدد الطوابق:', 'Number of Floors'));
+    c.unitsCount = cleanExtractedValue(capture(propSection, 'عدد الوحدات:', 'Number of Units'));
+    c.parkingCount = cleanExtractedValue(capture(propSection, 'عدد المواقف:', 'Number of Parking'));
+    c.elevatorsCount = cleanExtractedValue(capture(propSection, 'عدد المصاعد:', 'Number of Elevators'));
 
     // استخراج المدينة والحي من العنوان الوطني
     if (c.nationalAddress) {
@@ -295,14 +327,14 @@ function parseEjarPdfText(text: string): EjarPdfContract {
 
   if (unitsIdx !== -1) {
     const unitSection = text.slice(unitsIdx, tenantAuthIdx !== -1 ? tenantAuthIdx : unitsIdx + 600);
-    c.unitType = capture(unitSection, 'نوع الوحدة:', 'Unit Type');
-    c.unitNumber = capture(unitSection, 'رقم الوحدة:', 'Unit No.');
-    c.unitFloor = capture(unitSection, 'رقم الطابق:', 'Floor No.');
-    c.unitArea = capture(unitSection, 'مساحة الوحدة:', 'Unit Area');
-    c.unitFurnished = capture(unitSection, 'مؤَّثثة:', 'Furnished');
-    c.electricityMeter = capture(unitSection, 'رقم عَّداد الكهرباء', 'Electricity meter number');
-    c.gasMeter = capture(unitSection, 'رقم عَّداد الغاز', 'Gas meter number');
-    c.waterMeter = capture(unitSection, 'رقم عَّداد المياه', 'Water meter number');
+    c.unitType = cleanExtractedValue(capture(unitSection, 'نوع الوحدة:', 'Unit Type'));
+    c.unitNumber = cleanExtractedValue(capture(unitSection, 'رقم الوحدة:', 'Unit No.'));
+    c.unitFloor = cleanExtractedValue(capture(unitSection, 'رقم الطابق:', 'Floor No.'));
+    c.unitArea = cleanExtractedValue(capture(unitSection, 'مساحة الوحدة:', 'Unit Area'));
+    c.unitFurnished = normalizeYesNo(capture(unitSection, 'مؤَّثثة:', 'Furnished'));
+    c.electricityMeter = cleanExtractedValue(capture(unitSection, 'رقم عَّداد الكهرباء', 'Electricity meter number'));
+    c.gasMeter = cleanExtractedValue(capture(unitSection, 'رقم عَّداد الغاز', 'Gas meter number'));
+    c.waterMeter = cleanExtractedValue(capture(unitSection, 'رقم عَّداد المياه', 'Water meter number'));
 
     // استخراج أنواع الغرف
     const rooms: Record<string, string> = {};
@@ -328,17 +360,17 @@ function parseEjarPdfText(text: string): EjarPdfContract {
 
   if (finDataIdx !== -1) {
     const finSection = text.slice(finDataIdx, scheduleIdx !== -1 ? scheduleIdx : finDataIdx + 600);
-    c.annualRent = capture(finSection, 'قيمة اإليجار', 'Annual Rent', 'قيمة الإيجار');
-    c.securityDeposit = capture(finSection, 'مبلغ الَّضمان', 'Security Deposit');
-    c.electricityAmount = capture(finSection, 'أجرة الكهرباء', 'Electricity Annual');
-    c.waterAmount = capture(finSection, 'أجرة المياه', 'Water Annual');
-    c.gasAmount = capture(finSection, 'أجرة الغاز', 'Gas Annual');
-    c.parkingAmount = capture(finSection, 'أجرة المواقف', 'Parking Annual');
-    c.regularPayment = capture(finSection, 'دفعة اإليجار الَّدورية:', 'دفعة الإيجار الدورية:', 'Regular Rent Payment');
-    c.lastPayment = capture(finSection, 'دفعة اإليجار األخيرة:', 'دفعة الإيجار الأخيرة:', 'Last Rent Payment');
-    c.paymentsCount = capture(finSection, 'عدد دفعات اإليجار:', 'عدد دفعات الإيجار:', 'Number of Rent Payments');
-    c.paymentCycle = capture(finSection, 'دورة سداد الايجار', 'Rent payment cycle');
-    c.totalContractValue = capture(finSection, 'اجمالي قيمة العقد:', 'إجمالي قيمة العقد:', 'Total Contract value');
+    c.annualRent = extractNumberValue(capture(finSection, 'قيمة اإليجار', 'Annual Rent', 'قيمة الإيجار'));
+    c.securityDeposit = extractNumberValue(capture(finSection, 'مبلغ الَّضمان', 'Security Deposit'));
+    c.electricityAmount = extractNumberValue(capture(finSection, 'أجرة الكهرباء', 'Electricity Annual'));
+    c.waterAmount = extractNumberValue(capture(finSection, 'أجرة المياه', 'Water Annual'));
+    c.gasAmount = extractNumberValue(capture(finSection, 'أجرة الغاز', 'Gas Annual'));
+    c.parkingAmount = extractNumberValue(capture(finSection, 'أجرة المواقف', 'Parking Annual'));
+    c.regularPayment = extractNumberValue(capture(finSection, 'دفعة اإليجار الَّدورية:', 'دفعة الإيجار الدورية:', 'Regular Rent Payment'));
+    c.lastPayment = extractNumberValue(capture(finSection, 'دفعة اإليجار األخيرة:', 'دفعة الإيجار الأخيرة:', 'Last Rent Payment'));
+    c.paymentsCount = extractNumberValue(capture(finSection, 'عدد دفعات اإليجار:', 'عدد دفعات الإيجار:', 'Number of Rent Payments'));
+    c.paymentCycle = cleanExtractedValue(capture(finSection, 'دورة سداد الايجار', 'Rent payment cycle'));
+    c.totalContractValue = extractNumberValue(capture(finSection, 'اجمالي قيمة العقد:', 'إجمالي قيمة العقد:', 'Total Contract value'));
   }
 
   // ═══ 12: جدول السداد ═══
@@ -354,11 +386,11 @@ function parseEjarPdfText(text: string): EjarPdfContract {
     if (rows.length > 0) c.paymentSchedule = rows;
     // استخراج إجمالي قيمة العقد إن لم يُستخرج
     if (!c.totalContractValue) {
-      c.totalContractValue = capture(schedSection, 'اجمالي قيمة العقد:', 'Total Contract value');
+      c.totalContractValue = extractNumberValue(capture(schedSection, 'اجمالي قيمة العقد:', 'Total Contract value'));
     }
     // الإيجار السنوي
     if (!c.annualRent) {
-      c.annualRent = capture(schedSection, 'قيمة اإليجار', 'Annual Rent');
+      c.annualRent = extractNumberValue(capture(schedSection, 'قيمة اإليجار', 'Annual Rent'));
     }
   }
 
@@ -649,17 +681,17 @@ function PdfContractView({ contract }: { contract: EjarPdfContract }) {
         </PdfSection>
 
         <PdfSection num="11" title="البيانات المالية" icon={DollarSign} color="bg-amber-700" cols={3}>
-          <PdfField label="قيمة الإيجار السنوي (ر.س)" value={contract.annualRent} />
-          <PdfField label="إجمالي قيمة العقد (ر.س)" value={contract.totalContractValue} />
-          <PdfField label="مبلغ الضمان (ر.س)" value={contract.securityDeposit} />
-          <PdfField label="الدفعة الدورية (ر.س)" value={contract.regularPayment} />
-          <PdfField label="الدفعة الأخيرة (ر.س)" value={contract.lastPayment} />
+          <PdfField label="قيمة الإيجار السنوي" value={formatSar(contract.annualRent)} />
+          <PdfField label="إجمالي قيمة العقد" value={formatSar(contract.totalContractValue)} />
+          <PdfField label="مبلغ الضمان" value={formatSar(contract.securityDeposit)} />
+          <PdfField label="الدفعة الدورية" value={formatSar(contract.regularPayment)} />
+          <PdfField label="الدفعة الأخيرة" value={formatSar(contract.lastPayment)} />
           <PdfField label="عدد الدفعات" value={contract.paymentsCount} />
           <PdfField label="دورة سداد الإيجار" value={contract.paymentCycle} />
-          {contract.electricityAmount && contract.electricityAmount !== '0' && <PdfField label="أجرة الكهرباء (ر.س)" value={contract.electricityAmount} />}
-          {contract.waterAmount && contract.waterAmount !== '0' && <PdfField label="أجرة المياه (ر.س)" value={contract.waterAmount} />}
-          {contract.gasAmount && contract.gasAmount !== '0' && <PdfField label="أجرة الغاز (ر.س)" value={contract.gasAmount} />}
-          {contract.parkingAmount && contract.parkingAmount !== '0' && <PdfField label="أجرة المواقف (ر.س)" value={contract.parkingAmount} />}
+          {contract.electricityAmount && contract.electricityAmount !== '0' && <PdfField label="أجرة الكهرباء" value={formatSar(contract.electricityAmount)} />}
+          {contract.waterAmount && contract.waterAmount !== '0' && <PdfField label="أجرة المياه" value={formatSar(contract.waterAmount)} />}
+          {contract.gasAmount && contract.gasAmount !== '0' && <PdfField label="أجرة الغاز" value={formatSar(contract.gasAmount)} />}
+          {contract.parkingAmount && contract.parkingAmount !== '0' && <PdfField label="أجرة المواقف" value={formatSar(contract.parkingAmount)} />}
         </PdfSection>
 
         {contract.paymentSchedule && contract.paymentSchedule.length > 0 && (
