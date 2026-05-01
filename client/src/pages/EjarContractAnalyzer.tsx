@@ -1,14 +1,16 @@
 /*
  * EjarContractAnalyzer — استرداد وتحليل عقود إيجار
  * رمز الإبداع لإدارة الأملاك
+ * يدعم: ملفات PDF لعقود إيجار + Excel/CSV لقوائم عقود
  */
 import { useState, useRef, useCallback } from 'react';
 import {
   Upload, FileText, AlertTriangle, CheckCircle, Loader2,
   Search, Download, Copy, ChevronDown, ChevronUp,
   User, Building2, Calendar, DollarSign, Phone,
-  MapPin, Hash, Clock, RefreshCw, Eye, X,
-  FileSearch, Sparkles, ClipboardList,
+  MapPin, Hash, Clock, RefreshCw, X,
+  FileSearch, ClipboardList, Shield, Briefcase,
+  CreditCard, Users, Home, BarChart3, FileCheck,
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { toast } from 'sonner';
@@ -19,35 +21,116 @@ const DARK = '#1a1a1a';
 const GREEN = '#0ea472';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
+
+/** بيانات عقد إيجار مستخرجة من PDF */
+interface EjarPdfContract {
+  // 1 - بيانات العقد
+  contractNumber?: string;
+  contractType?: string;
+  contractDate?: string;
+  contractLocation?: string;
+  startDate?: string;
+  endDate?: string;
+
+  // 2 - بيانات المؤجر
+  ownerName?: string;
+  ownerNationality?: string;
+  ownerIdType?: string;
+  ownerId?: string;
+  ownerPhone?: string;
+  ownerEmail?: string;
+
+  // 4 - بيانات المستأجر
+  tenantName?: string;
+  tenantNationality?: string;
+  tenantIdType?: string;
+  tenantId?: string;
+  tenantPhone?: string;
+  tenantEmail?: string;
+
+  // 6 - بيانات الوساطة
+  brokerCompany?: string;
+  brokerCR?: string;
+  brokerName?: string;
+  brokerPhone?: string;
+  brokerEmail?: string;
+
+  // 7 - مستندات الملكية
+  titleDeedNumber?: string;
+  titleDeedIssuer?: string;
+  titleDeedDate?: string;
+  titleDeedLocation?: string;
+  titleDeedType?: string;
+
+  // 8 - بيانات العقار
+  nationalAddress?: string;
+  propertyType?: string;
+  propertyUsage?: string;
+  floorsCount?: string;
+  unitsCount?: string;
+  parkingCount?: string;
+  elevatorsCount?: string;
+
+  // 9 - الوحدة الإيجارية
+  unitType?: string;
+  unitNumber?: string;
+  unitFloor?: string;
+  unitArea?: string;
+  unitFurnished?: string;
+  unitRooms?: Record<string, string>;
+  electricityMeter?: string;
+  gasMeter?: string;
+  waterMeter?: string;
+
+  // 11 - المالية
+  annualRent?: string;
+  totalContractValue?: string;
+  regularPayment?: string;
+  lastPayment?: string;
+  paymentsCount?: string;
+  paymentCycle?: string;
+  securityDeposit?: string;
+  electricityAmount?: string;
+  waterAmount?: string;
+  gasAmount?: string;
+  parkingAmount?: string;
+
+  // 12 - جدول السداد
+  paymentSchedule?: Array<{
+    num: string;
+    dueDateAD: string;
+    endDeadlineAD: string;
+    amount: string;
+  }>;
+
+  // raw text
+  rawText?: string;
+  city?: string;
+  district?: string;
+  status?: string;
+}
+
+/** بيانات عقد Excel بسيطة */
 interface ContractData {
-  // معلومات العقد
   contractNumber?: string;
   contractDate?: string;
   startDate?: string;
   endDate?: string;
   duration?: string;
   status?: string;
-
-  // معلومات العقار
   propertyName?: string;
   propertyType?: string;
   unitNumber?: string;
   city?: string;
   district?: string;
   address?: string;
-
-  // المستأجر
   tenantName?: string;
   tenantId?: string;
   tenantPhone?: string;
   tenantEmail?: string;
-
-  // المالك
   ownerName?: string;
   ownerId?: string;
   ownerPhone?: string;
-
-  // المالية
   annualRent?: string;
   monthlyRent?: string;
   deposit?: string;
@@ -55,19 +138,259 @@ interface ContractData {
   totalRent?: string;
   paymentMethod?: string;
   paymentFrequency?: string;
-
-  // ميزات إضافية
   waterIncluded?: boolean;
   electricityIncluded?: boolean;
   maintenanceIncluded?: boolean;
-
-  // خام
   rawFields?: Record<string, string>;
 }
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
+// ─── PDF Parser ─────────────────────────────────────────────────────────────────
+
+/** استخراج النص من PDF باستخدام pdfjs-dist */
+async function extractPdfText(file: File): Promise<string> {
+  const pdfjsLib = await import('pdfjs-dist');
+  // استخدام worker بدون CDN — تعيين workerSrc إلى رابط محلي
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url
+  ).toString();
+
+  const arrayBuffer = await file.arrayBuffer();
+  const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+  const pdf = await loadingTask.promise;
+
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items
+      .map((item: any) => item.str)
+      .join(' ');
+    fullText += pageText + '\n';
+  }
+  return fullText;
+}
+
+/** مساعد: اقتنص قيمة بين علامة ونهاية (أول 200 حرف) */
+function capture(text: string, ...markers: string[]): string {
+  for (const marker of markers) {
+    const idx = text.indexOf(marker);
+    if (idx !== -1) {
+      const after = text.slice(idx + marker.length, idx + marker.length + 200).trim();
+      // أخذ حتى أول نقطة أو سطر جديد أو علامة تقسيم
+      const end = after.search(/\n|:|\s{3,}/);
+      return (end > 0 ? after.slice(0, end) : after.slice(0, 60)).trim();
+    }
+  }
+  return '';
+}
+
+/** استخراج بيانات عقد إيجار من نص PDF */
+function parseEjarPdfText(text: string): EjarPdfContract {
+  const c: EjarPdfContract = { rawText: text };
+
+  // ═══ 1: بيانات العقد ═══
+  c.contractNumber = capture(text, 'رقم سجل العقد:', 'Contract No.', 'No Contract');
+  c.contractType = capture(text, 'نوع العقد:', 'Type Contract', 'Contract Type');
+  c.contractDate = capture(text, 'تاريخ إبرام العقد:', 'Contract Sealing Date', 'Sealing Date');
+  c.contractLocation = capture(text, 'مكان إبرام العقد:', 'Sealing Contract Location', 'Location');
+  c.startDate = capture(text, 'تاريخ بداية مَّدة اإليجار:', 'تاريخ بداية مدة الإيجار:', 'Tenancy Start Date');
+  c.endDate = capture(text, 'تاريخ نهاية مَّدة اإليجار:', 'تاريخ نهاية مدة الإيجار:', 'Tenancy End Date');
+
+  // ═══ 2: بيانات المؤجر ═══
+  // نبحث عن قسم المؤجر ونستخرج منه
+  const lessorIdx = text.indexOf('بيانات المؤّجر') !== -1
+    ? text.indexOf('بيانات المؤّجر')
+    : text.indexOf('Lessor Data');
+  const tenantIdx = text.indexOf('بيانات المستأجر') !== -1
+    ? text.indexOf('بيانات المستأجر')
+    : text.indexOf('Tenant Data');
+
+  if (lessorIdx !== -1) {
+    const lessorSection = text.slice(lessorIdx, tenantIdx !== -1 ? tenantIdx : lessorIdx + 500);
+    c.ownerName = capture(lessorSection, 'االسم:', 'الاسم:', 'Name');
+    c.ownerNationality = capture(lessorSection, 'الجنسَّية:', 'الجنسية:', 'Nationality');
+    c.ownerIdType = capture(lessorSection, 'نوع الهوَّية:', 'نوع الهوية:', 'ID Type');
+    c.ownerId = capture(lessorSection, 'رقم الهوَّية:', 'رقم الهوية:', 'ID No.');
+    c.ownerPhone = capture(lessorSection, 'رقم الجَّوال:', 'رقم الجوال:', 'Mobile No.');
+    c.ownerEmail = capture(lessorSection, 'البريد اإللكتروني:', 'البريد الإلكتروني:', 'Email');
+  }
+
+  // ═══ 4: بيانات المستأجر ═══
+  const brokerIdx = text.indexOf('بيانات منشأة الوساطة') !== -1
+    ? text.indexOf('بيانات منشأة الوساطة')
+    : text.indexOf('Brokerage Entity');
+
+  if (tenantIdx !== -1) {
+    const tenantSection = text.slice(tenantIdx, brokerIdx !== -1 ? brokerIdx : tenantIdx + 500);
+    c.tenantName = capture(tenantSection, 'االسم:', 'الاسم:', 'Name');
+    c.tenantNationality = capture(tenantSection, 'الجنسَّية:', 'الجنسية:', 'Nationality');
+    c.tenantIdType = capture(tenantSection, 'نوع الهوَّية:', 'نوع الهوية:', 'ID Type');
+    c.tenantId = capture(tenantSection, 'رقم الهوَّية:', 'رقم الهوية:', 'ID No.');
+    c.tenantPhone = capture(tenantSection, 'رقم الجَّوال:', 'رقم الجوال:', 'Mobile No.');
+    c.tenantEmail = capture(tenantSection, 'البريد اإللكتروني:', 'البريد الإلكتروني:', 'Email');
+  }
+
+  // ═══ 6: الوساطة ═══
+  const ownerDocIdx = text.indexOf('بيانات مستندات الملكَّية') !== -1
+    ? text.indexOf('بيانات مستندات الملكَّية')
+    : text.indexOf('Ownership document Data');
+
+  if (brokerIdx !== -1) {
+    const brokerSection = text.slice(brokerIdx, ownerDocIdx !== -1 ? ownerDocIdx : brokerIdx + 600);
+    c.brokerCompany = capture(brokerSection, 'اسم منشأة الوساطة العقارية:', 'Brokerage Entity Name');
+    c.brokerCR = capture(brokerSection, 'رقم الِّسجل الِّتجاري:', 'رقم السجل التجاري:', 'CR No.');
+    c.brokerName = capture(brokerSection, 'اسم الموظف:', 'Broker Name');
+    c.brokerPhone = capture(brokerSection, 'رقم الجَّوال:', 'رقم الجوال:', 'Mobile No.');
+    c.brokerEmail = capture(brokerSection, 'البريد اإللكتروني:', 'البريد الإلكتروني:', 'Email');
+  }
+
+  // ═══ 7: مستندات الملكية ═══
+  const propDataIdx = text.indexOf('بيانات العقار') !== -1
+    ? text.indexOf('بيانات العقار')
+    : text.indexOf('Property Data');
+
+  if (ownerDocIdx !== -1) {
+    const docSection = text.slice(ownerDocIdx, propDataIdx !== -1 ? propDataIdx : ownerDocIdx + 400);
+    c.titleDeedNumber = capture(docSection, 'Title Deed No:', 'رقم المستند:', 'رقم الصك');
+    c.titleDeedIssuer = capture(docSection, 'Issuer:', 'جهة اإلصدار:', 'جهة الإصدار:');
+    c.titleDeedDate = capture(docSection, 'Issue Date:', 'تاريخ اإلصدار:', 'تاريخ الإصدار:');
+    c.titleDeedLocation = capture(docSection, 'Place of Issue:', 'مكان اإلصدار:', 'مكان الإصدار:');
+    c.titleDeedType = capture(docSection, 'Title deed type:', 'نوع الصك:');
+  }
+
+  // ═══ 8: بيانات العقار ═══
+  const unitsIdx = text.indexOf('بيانات الوحدات اإليجارَّية') !== -1
+    ? text.indexOf('بيانات الوحدات اإليجارَّية')
+    : text.indexOf('بيانات الوحدات الإيجارية') !== -1
+    ? text.indexOf('بيانات الوحدات الإيجارية')
+    : text.indexOf('Rental Units Data');
+
+  if (propDataIdx !== -1) {
+    const propSection = text.slice(propDataIdx, unitsIdx !== -1 ? unitsIdx : propDataIdx + 500);
+    c.nationalAddress = capture(propSection, 'العنوان الوطني:', 'National Address');
+    c.propertyType = capture(propSection, 'نوع بناء العقار:', 'Property Type');
+    c.propertyUsage = capture(propSection, 'الغرض من استخدام العقار:', 'Property Usage');
+    c.floorsCount = capture(propSection, 'عدد الطوابق:', 'Number of Floors');
+    c.unitsCount = capture(propSection, 'عدد الوحدات:', 'Number of Units');
+    c.parkingCount = capture(propSection, 'عدد المواقف:', 'Number of Parking');
+    c.elevatorsCount = capture(propSection, 'عدد المصاعد:', 'Number of Elevators');
+
+    // استخراج المدينة والحي من العنوان الوطني
+    if (c.nationalAddress) {
+      const parts = c.nationalAddress.split(/[,،]/);
+      if (parts.length >= 4) {
+        c.district = parts[1]?.trim();
+        c.city = parts[parts.length - 1]?.trim() || parts[3]?.trim();
+      }
+    }
+    // محاولة من السياق
+    if (!c.city) c.city = capture(text, 'الرياض') ? 'الرياض' : capture(text, 'جدة') ? 'جدة' : capture(text, 'مكة') ? 'مكة' : '';
+  }
+
+  // ═══ 9: الوحدة الإيجارية ═══
+  const tenantAuthIdx = text.indexOf('صالحيات المستأجر') !== -1
+    ? text.indexOf('صالحيات المستأجر')
+    : text.indexOf('Tenant Authority');
+
+  if (unitsIdx !== -1) {
+    const unitSection = text.slice(unitsIdx, tenantAuthIdx !== -1 ? tenantAuthIdx : unitsIdx + 600);
+    c.unitType = capture(unitSection, 'نوع الوحدة:', 'Unit Type');
+    c.unitNumber = capture(unitSection, 'رقم الوحدة:', 'Unit No.');
+    c.unitFloor = capture(unitSection, 'رقم الطابق:', 'Floor No.');
+    c.unitArea = capture(unitSection, 'مساحة الوحدة:', 'Unit Area');
+    c.unitFurnished = capture(unitSection, 'مؤَّثثة:', 'Furnished');
+    c.electricityMeter = capture(unitSection, 'رقم عَّداد الكهرباء', 'Electricity meter number');
+    c.gasMeter = capture(unitSection, 'رقم عَّداد الغاز', 'Gas meter number');
+    c.waterMeter = capture(unitSection, 'رقم عَّداد المياه', 'Water meter number');
+
+    // استخراج أنواع الغرف
+    const rooms: Record<string, string> = {};
+    const roomMatches = unitSection.matchAll(/نوع الغرفة\s+([^\n]+)\s+العدد\s+(\d+)/g);
+    for (const m of roomMatches) {
+      rooms[m[1].trim()] = m[2].trim();
+    }
+    if (Object.keys(rooms).length > 0) c.unitRooms = rooms;
+  }
+
+  // ═══ 11: المالية ═══
+  const scheduleIdx = text.indexOf('جدول سداد الُّدفعات') !== -1
+    ? text.indexOf('جدول سداد الُّدفعات')
+    : text.indexOf('جدول سداد الدفعات') !== -1
+    ? text.indexOf('جدول سداد الدفعات')
+    : text.indexOf('Rent Payments Schedule');
+
+  const finDataIdx = text.indexOf('البيانات المالَّية') !== -1
+    ? text.indexOf('البيانات المالَّية')
+    : text.indexOf('البيانات المالية') !== -1
+    ? text.indexOf('البيانات المالية')
+    : text.indexOf('Financial Data');
+
+  if (finDataIdx !== -1) {
+    const finSection = text.slice(finDataIdx, scheduleIdx !== -1 ? scheduleIdx : finDataIdx + 600);
+    c.annualRent = capture(finSection, 'قيمة اإليجار', 'Annual Rent', 'قيمة الإيجار');
+    c.securityDeposit = capture(finSection, 'مبلغ الَّضمان', 'Security Deposit');
+    c.electricityAmount = capture(finSection, 'أجرة الكهرباء', 'Electricity Annual');
+    c.waterAmount = capture(finSection, 'أجرة المياه', 'Water Annual');
+    c.gasAmount = capture(finSection, 'أجرة الغاز', 'Gas Annual');
+    c.parkingAmount = capture(finSection, 'أجرة المواقف', 'Parking Annual');
+    c.regularPayment = capture(finSection, 'دفعة اإليجار الَّدورية:', 'دفعة الإيجار الدورية:', 'Regular Rent Payment');
+    c.lastPayment = capture(finSection, 'دفعة اإليجار األخيرة:', 'دفعة الإيجار الأخيرة:', 'Last Rent Payment');
+    c.paymentsCount = capture(finSection, 'عدد دفعات اإليجار:', 'عدد دفعات الإيجار:', 'Number of Rent Payments');
+    c.paymentCycle = capture(finSection, 'دورة سداد الايجار', 'Rent payment cycle');
+    c.totalContractValue = capture(finSection, 'اجمالي قيمة العقد:', 'إجمالي قيمة العقد:', 'Total Contract value');
+  }
+
+  // ═══ 12: جدول السداد ═══
+  if (scheduleIdx !== -1) {
+    const schedSection = text.slice(scheduleIdx, scheduleIdx + 800);
+    const rows: Array<{ num: string; dueDateAD: string; endDeadlineAD: string; amount: string }> = [];
+    // نمط: رقم تسلسلي + تواريخ + مبلغ
+    const payPattern = /(\d)\s+([\d]{4}-[\d]{2}-[\d]{2})\s+([\d]{4}-[\d]{2}-[\d]{2})\s+(?:يوم\s+)?[\d\-]+\s+[\d\-]+\s+([\d,]+\.?\d*)/g;
+    let m;
+    while ((m = payPattern.exec(schedSection)) !== null) {
+      rows.push({ num: m[1], dueDateAD: m[2], endDeadlineAD: m[3], amount: m[4] });
+    }
+    if (rows.length > 0) c.paymentSchedule = rows;
+    // استخراج إجمالي قيمة العقد إن لم يُستخرج
+    if (!c.totalContractValue) {
+      c.totalContractValue = capture(schedSection, 'اجمالي قيمة العقد:', 'Total Contract value');
+    }
+    // الإيجار السنوي
+    if (!c.annualRent) {
+      c.annualRent = capture(schedSection, 'قيمة اإليجار', 'Annual Rent');
+    }
+  }
+
+  // تنظيف: إزالة القيم الفارغة جداً
+  for (const key of Object.keys(c) as (keyof EjarPdfContract)[]) {
+    if (typeof c[key] === 'string' && (c[key] as string).length > 100) {
+      (c as any)[key] = (c[key] as string).slice(0, 80) + '...';
+    }
+  }
+
+  return c;
+}
+
+/** تحديد حالة العقد بناءً على التواريخ */
+function deriveStatus(c: EjarPdfContract): string {
+  if (c.endDate) {
+    try {
+      const end = new Date(c.endDate);
+      const now = new Date();
+      if (end < now) return 'منتهي';
+      const daysLeft = (end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysLeft <= 30) return 'ينتهي قريباً';
+      return 'ساري';
+    } catch { /* ignore */ }
+  }
+  return 'ساري';
+}
+
+// ─── Excel Helpers ─────────────────────────────────────────────────────────────
+
 function extractFromRows(rows: Record<string, string>[]): ContractData[] {
-  return rows.map(row => {
+  return rows.map((row) => {
     const get = (...keys: string[]) => {
       for (const k of keys) {
         const val = row[k] || row[k.toLowerCase()] || row[k.toUpperCase()];
@@ -113,7 +436,7 @@ function extractFromRows(rows: Record<string, string>[]): ContractData[] {
   });
 }
 
-function parseFile(file: File): Promise<ContractData[]> {
+function parseExcelFile(file: File): Promise<ContractData[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -130,6 +453,250 @@ function parseFile(file: File): Promise<ContractData[]> {
     reader.onerror = reject;
     reader.readAsArrayBuffer(file);
   });
+}
+
+// ─── PDF Contract View ─────────────────────────────────────────────────────────
+
+function PdfField({ label, value, full = false }: { label: string; value?: string; full?: boolean }) {
+  if (!value) return null;
+  return (
+    <div className={full ? 'col-span-2' : ''}>
+      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">{label}</p>
+      <p className="text-sm font-bold text-gray-800 break-words leading-snug">{value}</p>
+    </div>
+  );
+}
+
+function PdfSection({ num, title, icon: Icon, color, children, cols = 2 }: {
+  num: string; title: string; icon: any; color: string; children: React.ReactNode; cols?: number;
+}) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="border border-gray-200 rounded-2xl overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-5 py-3.5 bg-gray-50 hover:bg-gray-100 transition"
+      >
+        <div className="flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-black ${color}`}>
+            {num}
+          </div>
+          <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${color} opacity-80`}>
+            <Icon className="w-4 h-4 text-white" />
+          </div>
+          <span className="font-black text-sm text-gray-900">{title}</span>
+        </div>
+        {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+      </button>
+      {open && (
+        <div className={`grid gap-x-6 gap-y-4 p-5`} style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PdfContractView({ contract }: { contract: EjarPdfContract }) {
+  const [copied, setCopied] = useState(false);
+  const status = deriveStatus(contract);
+  const statusColor = status === 'ساري' ? 'bg-emerald-100 text-emerald-700' :
+    status === 'منتهي' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700';
+
+  const copyAll = () => {
+    const lines: string[] = [];
+    if (contract.contractNumber) lines.push(`رقم العقد: ${contract.contractNumber}`);
+    if (contract.contractType) lines.push(`نوع العقد: ${contract.contractType}`);
+    if (contract.startDate) lines.push(`تاريخ البداية: ${contract.startDate}`);
+    if (contract.endDate) lines.push(`تاريخ النهاية: ${contract.endDate}`);
+    if (contract.ownerName) lines.push(`المؤجر: ${contract.ownerName}`);
+    if (contract.ownerId) lines.push(`هوية المؤجر: ${contract.ownerId}`);
+    if (contract.ownerPhone) lines.push(`جوال المؤجر: ${contract.ownerPhone}`);
+    if (contract.tenantName) lines.push(`المستأجر: ${contract.tenantName}`);
+    if (contract.tenantId) lines.push(`هوية المستأجر: ${contract.tenantId}`);
+    if (contract.tenantPhone) lines.push(`جوال المستأجر: ${contract.tenantPhone}`);
+    if (contract.nationalAddress) lines.push(`العنوان الوطني: ${contract.nationalAddress}`);
+    if (contract.propertyType) lines.push(`نوع العقار: ${contract.propertyType}`);
+    if (contract.unitNumber) lines.push(`رقم الوحدة: ${contract.unitNumber}`);
+    if (contract.unitType) lines.push(`نوع الوحدة: ${contract.unitType}`);
+    if (contract.unitArea) lines.push(`المساحة: ${contract.unitArea}`);
+    if (contract.annualRent) lines.push(`الإيجار السنوي: ${contract.annualRent} ر.س`);
+    if (contract.totalContractValue) lines.push(`إجمالي قيمة العقد: ${contract.totalContractValue} ر.س`);
+    if (contract.titleDeedNumber) lines.push(`رقم صك الملكية: ${contract.titleDeedNumber}`);
+    navigator.clipboard.writeText(lines.join('\n'));
+    setCopied(true);
+    toast.success('تم نسخ بيانات العقد كاملة');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100" style={{ background: `${GOLD}08` }}>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: `${GOLD}20` }}>
+            <FileCheck className="w-6 h-6" style={{ color: GOLD }} />
+          </div>
+          <div>
+            <p className="font-black text-gray-900 text-base">
+              عقد إيجار {contract.contractNumber ? `رقم ${contract.contractNumber}` : ''}
+            </p>
+            <p className="text-sm text-gray-500 mt-0.5">
+              المستأجر: {contract.tenantName || '—'} &nbsp;|&nbsp; المؤجر: {contract.ownerName || '—'}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`text-xs font-bold px-3 py-1 rounded-full ${statusColor}`}>{status}</span>
+          <button onClick={copyAll} title="نسخ البيانات"
+            className="p-2 rounded-xl hover:bg-gray-100 transition text-gray-400">
+            {copied ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Quick stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-x-reverse divide-gray-100 border-b border-gray-100">
+        {[
+          { label: 'الإيجار السنوي (ر.س)', val: contract.annualRent || '—', accent: true },
+          { label: 'تاريخ البداية', val: contract.startDate || '—' },
+          { label: 'تاريخ النهاية', val: contract.endDate || '—' },
+          { label: 'رقم الوحدة', val: contract.unitNumber || contract.unitType || '—' },
+        ].map(s => (
+          <div key={s.label} className="px-4 py-3 text-center">
+            <p className="text-xs text-gray-400">{s.label}</p>
+            <p className={`text-sm font-black mt-0.5 ${s.accent ? 'text-amber-700' : 'text-gray-800'}`}>{s.val}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Sections */}
+      <div className="p-5 space-y-3">
+
+        <PdfSection num="1" title="بيانات العقد" icon={ClipboardList} color="bg-blue-600" cols={3}>
+          <PdfField label="رقم سجل العقد" value={contract.contractNumber} />
+          <PdfField label="نوع العقد" value={contract.contractType} />
+          <PdfField label="مكان الإبرام" value={contract.contractLocation} />
+          <PdfField label="تاريخ الإبرام" value={contract.contractDate} />
+          <PdfField label="تاريخ البداية" value={contract.startDate} />
+          <PdfField label="تاريخ النهاية" value={contract.endDate} />
+        </PdfSection>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <PdfSection num="2" title="بيانات المؤجر" icon={User} color="bg-amber-600" cols={1}>
+            <PdfField label="الاسم" value={contract.ownerName} />
+            <PdfField label="الجنسية" value={contract.ownerNationality} />
+            <PdfField label="نوع الهوية" value={contract.ownerIdType} />
+            <PdfField label="رقم الهوية" value={contract.ownerId} />
+            <PdfField label="الجوال" value={contract.ownerPhone} />
+            <PdfField label="البريد الإلكتروني" value={contract.ownerEmail} />
+          </PdfSection>
+
+          <PdfSection num="4" title="بيانات المستأجر" icon={Users} color="bg-purple-600" cols={1}>
+            <PdfField label="الاسم" value={contract.tenantName} />
+            <PdfField label="الجنسية" value={contract.tenantNationality} />
+            <PdfField label="نوع الهوية" value={contract.tenantIdType} />
+            <PdfField label="رقم الهوية" value={contract.tenantId} />
+            <PdfField label="الجوال" value={contract.tenantPhone} />
+            <PdfField label="البريد الإلكتروني" value={contract.tenantEmail} />
+          </PdfSection>
+        </div>
+
+        {(contract.brokerCompany || contract.brokerName) && (
+          <PdfSection num="6" title="بيانات منشأة الوساطة العقارية" icon={Briefcase} color="bg-slate-600" cols={3}>
+            <PdfField label="اسم المنشأة" value={contract.brokerCompany} />
+            <PdfField label="رقم السجل التجاري" value={contract.brokerCR} />
+            <PdfField label="اسم الموظف / الوسيط" value={contract.brokerName} />
+            <PdfField label="الجوال" value={contract.brokerPhone} />
+            <PdfField label="البريد الإلكتروني" value={contract.brokerEmail} />
+          </PdfSection>
+        )}
+
+        {(contract.titleDeedNumber || contract.titleDeedType) && (
+          <PdfSection num="7" title="بيانات مستندات الملكية" icon={Shield} color="bg-emerald-700" cols={3}>
+            <PdfField label="رقم الصك / الوثيقة" value={contract.titleDeedNumber} />
+            <PdfField label="جهة الإصدار" value={contract.titleDeedIssuer} />
+            <PdfField label="تاريخ الإصدار" value={contract.titleDeedDate} />
+            <PdfField label="مكان الإصدار" value={contract.titleDeedLocation} />
+            <PdfField label="نوع الصك" value={contract.titleDeedType} />
+          </PdfSection>
+        )}
+
+        <PdfSection num="8" title="بيانات العقار" icon={Building2} color="bg-green-700" cols={2}>
+          <PdfField label="العنوان الوطني" value={contract.nationalAddress} full />
+          <PdfField label="نوع البناء" value={contract.propertyType} />
+          <PdfField label="الغرض من الاستخدام" value={contract.propertyUsage} />
+          <PdfField label="عدد الطوابق" value={contract.floorsCount} />
+          <PdfField label="عدد الوحدات" value={contract.unitsCount} />
+          <PdfField label="عدد المواقف" value={contract.parkingCount} />
+          <PdfField label="عدد المصاعد" value={contract.elevatorsCount} />
+          {contract.city && <PdfField label="المدينة" value={contract.city} />}
+          {contract.district && <PdfField label="الحي" value={contract.district} />}
+        </PdfSection>
+
+        <PdfSection num="9" title="بيانات الوحدة الإيجارية" icon={Home} color="bg-teal-600" cols={3}>
+          <PdfField label="نوع الوحدة" value={contract.unitType} />
+          <PdfField label="رقم الوحدة" value={contract.unitNumber} />
+          <PdfField label="رقم الطابق" value={contract.unitFloor} />
+          <PdfField label="المساحة (م²)" value={contract.unitArea} />
+          <PdfField label="مؤثثة" value={contract.unitFurnished} />
+          {contract.unitRooms && Object.entries(contract.unitRooms).map(([type, count]) => (
+            <PdfField key={type} label={`عدد ${type}`} value={count} />
+          ))}
+          <PdfField label="رقم عداد الكهرباء" value={contract.electricityMeter} />
+          {contract.gasMeter && <PdfField label="رقم عداد الغاز" value={contract.gasMeter} />}
+          {contract.waterMeter && <PdfField label="رقم عداد المياه" value={contract.waterMeter} />}
+        </PdfSection>
+
+        <PdfSection num="11" title="البيانات المالية" icon={DollarSign} color="bg-amber-700" cols={3}>
+          <PdfField label="قيمة الإيجار السنوي (ر.س)" value={contract.annualRent} />
+          <PdfField label="إجمالي قيمة العقد (ر.س)" value={contract.totalContractValue} />
+          <PdfField label="مبلغ الضمان (ر.س)" value={contract.securityDeposit} />
+          <PdfField label="الدفعة الدورية (ر.س)" value={contract.regularPayment} />
+          <PdfField label="الدفعة الأخيرة (ر.س)" value={contract.lastPayment} />
+          <PdfField label="عدد الدفعات" value={contract.paymentsCount} />
+          <PdfField label="دورة سداد الإيجار" value={contract.paymentCycle} />
+          {contract.electricityAmount && contract.electricityAmount !== '0' && <PdfField label="أجرة الكهرباء (ر.س)" value={contract.electricityAmount} />}
+          {contract.waterAmount && contract.waterAmount !== '0' && <PdfField label="أجرة المياه (ر.س)" value={contract.waterAmount} />}
+          {contract.gasAmount && contract.gasAmount !== '0' && <PdfField label="أجرة الغاز (ر.س)" value={contract.gasAmount} />}
+          {contract.parkingAmount && contract.parkingAmount !== '0' && <PdfField label="أجرة المواقف (ر.س)" value={contract.parkingAmount} />}
+        </PdfSection>
+
+        {contract.paymentSchedule && contract.paymentSchedule.length > 0 && (
+          <div className="border border-gray-200 rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-3 px-5 py-3.5 bg-gray-50">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-black bg-indigo-600">12</div>
+              <div className="w-7 h-7 rounded-xl flex items-center justify-center bg-indigo-600 opacity-80">
+                <BarChart3 className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-black text-sm text-gray-900">جدول سداد الدفعات</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-900">
+                    {['رقم', 'تاريخ الاستحقاق', 'نهاية مهلة السداد', 'القيمة (ر.س)'].map(h => (
+                      <th key={h} className="px-4 py-2.5 text-right font-bold text-amber-400">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {contract.paymentSchedule.map((row, i) => (
+                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="px-4 py-2 font-bold text-gray-600">{row.num}</td>
+                      <td className="px-4 py-2 text-gray-700">{row.dueDateAD}</td>
+                      <td className="px-4 py-2 text-gray-500">{row.endDeadlineAD}</td>
+                      <td className="px-4 py-2 font-bold text-amber-700">{Number(row.amount.replace(/,/g, '')).toLocaleString('ar-SA')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 // ─── Field Badge ───────────────────────────────────────────────────────────────
@@ -313,7 +880,7 @@ function DropZone({ onFile }: { onFile: (f: File) => void }) {
       <input
         ref={ref}
         type="file"
-        accept=".xlsx,.xls,.csv"
+        accept=".pdf,.xlsx,.xls,.csv"
         className="hidden"
         onChange={e => { const f = e.target.files?.[0]; if (f) onFile(f); }}
       />
@@ -324,10 +891,10 @@ function DropZone({ onFile }: { onFile: (f: File) => void }) {
         <div>
           <p className="font-black text-gray-800">ارفع ملف العقود من إيجار</p>
           <p className="text-sm text-gray-500 mt-1">اسحب وأفلت أو انقر للاختيار</p>
-          <p className="text-xs text-gray-400 mt-2">Excel (.xlsx, .xls) أو CSV</p>
+          <p className="text-xs text-gray-400 mt-2">PDF أو Excel (.xlsx, .xls) أو CSV</p>
         </div>
         <div className="flex gap-2 flex-wrap justify-center mt-2">
-          {['عقود_إيجار.xlsx', 'تصدير_إيجار.csv', 'Ejar_Contracts.xlsx'].map(name => (
+          {['عقد_إيجار.pdf', 'عقود_إيجار.xlsx', 'تصدير_إيجار.csv', 'Ejar_Contracts.xlsx'].map(name => (
             <span key={name} className="text-xs px-2 py-1 bg-white border border-gray-200 rounded-lg text-gray-500">{name}</span>
           ))}
         </div>
@@ -393,6 +960,7 @@ function saveContracts(contracts: ContractData[]) {
 // ─── Main ──────────────────────────────────────────────────────────────────────
 export default function EjarContractAnalyzer() {
   const [contracts, setContracts] = useState<ContractData[]>([]);
+  const [pdfContract, setPdfContract] = useState<EjarPdfContract | null>(null);
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState('');
   const [search, setSearch] = useState('');
@@ -404,11 +972,60 @@ export default function EjarContractAnalyzer() {
     setFileName(file.name);
     setSaveResult(null);
     try {
-      const data = await parseFile(file);
-      setContracts(data);
-      toast.success(`تم تحليل ${data.length} عقد من الملف`);
+      const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+
+      if (isPdf) {
+        const text = await extractPdfText(file);
+        const parsed = parseEjarPdfText(text);
+        parsed.status = deriveStatus(parsed);
+        setPdfContract(parsed);
+
+        // تحويل العقد إلى الصيغة العامة للحفظ/التكامل مع النظام
+        const normalized: ContractData = {
+          contractNumber: parsed.contractNumber,
+          contractDate: parsed.contractDate,
+          startDate: parsed.startDate,
+          endDate: parsed.endDate,
+          status: parsed.status,
+          propertyName: parsed.nationalAddress,
+          propertyType: parsed.propertyType,
+          unitNumber: parsed.unitNumber,
+          city: parsed.city,
+          district: parsed.district,
+          tenantName: parsed.tenantName,
+          tenantId: parsed.tenantId,
+          tenantPhone: parsed.tenantPhone,
+          tenantEmail: parsed.tenantEmail,
+          ownerName: parsed.ownerName,
+          ownerId: parsed.ownerId,
+          ownerPhone: parsed.ownerPhone,
+          annualRent: parsed.annualRent,
+          totalRent: parsed.totalContractValue,
+          paymentFrequency: parsed.paymentCycle,
+          rawFields: {
+            رقم_عقد_الإيجار: parsed.contractNumber || '',
+            اسم_المؤجر: parsed.ownerName || '',
+            اسم_المستأجر: parsed.tenantName || '',
+            نوع_العقار: parsed.propertyType || '',
+            رقم_الوحدة: parsed.unitNumber || '',
+            قيمة_الإيجار: parsed.annualRent || '',
+            تاريخ_بداية_العقد: parsed.startDate || '',
+            تاريخ_نهاية_العقد: parsed.endDate || '',
+            الحالة: parsed.status || '',
+          },
+        };
+
+        setContracts([normalized]);
+        toast.success('تم تحليل عقد PDF بنجاح');
+      } else {
+        const data = await parseExcelFile(file);
+        setPdfContract(null);
+        setContracts(data);
+        toast.success(`تم تحليل ${data.length} عقد من الملف`);
+      }
     } catch (err) {
-      toast.error('فشل قراءة الملف — تأكد أنه Excel أو CSV صحيح');
+      toast.error('فشل قراءة الملف — تأكد أنه PDF/Excel/CSV صحيح');
+      setPdfContract(null);
       setContracts([]);
     }
     setLoading(false);
@@ -427,6 +1044,7 @@ export default function EjarContractAnalyzer() {
 
   const handleClear = () => {
     setContracts([]);
+    setPdfContract(null);
     setFileName('');
     setSaveResult(null);
     setSearch('');
@@ -461,7 +1079,7 @@ export default function EjarContractAnalyzer() {
               استرداد وتحليل عقود إيجار
             </h1>
             <p className="text-gray-500 text-sm mt-0.5">
-              رفع ملف Excel من منصة إيجار وتحليل بياناته تلقائياً
+              رفع ملف PDF أو Excel من منصة إيجار وتحليل بيانات العقد تلقائياً
             </p>
           </div>
           {contracts.length > 0 && (
@@ -554,8 +1172,11 @@ export default function EjarContractAnalyzer() {
             {/* Summary */}
             <AnalysisSummary contracts={contracts} />
 
+            {/* عرض PDF التفصيلي */}
+            {pdfContract && <PdfContractView contract={pdfContract} />}
+
             {/* Search & Filter */}
-            <div className="flex gap-3 flex-wrap">
+            {!pdfContract && <div className="flex gap-3 flex-wrap">
               <div className="flex-1 min-w-48 relative">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
@@ -576,10 +1197,10 @@ export default function EjarContractAnalyzer() {
                   </button>
                 ))}
               </div>
-            </div>
+            </div>}
 
             {/* Contract list */}
-            <div className="space-y-3">
+            {!pdfContract && <div className="space-y-3">
               {filtered.length === 0 ? (
                 <div className="text-center py-10 text-gray-400">
                   <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
@@ -593,7 +1214,7 @@ export default function EjarContractAnalyzer() {
                   عرض {filtered.length} من {contracts.length} عقد
                 </p>
               )}
-            </div>
+            </div>}
           </>
         )}
       </div>
