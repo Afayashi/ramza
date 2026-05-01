@@ -777,6 +777,7 @@ export default function PropertyOfficialReport() {
                     <span className="text-slate-600 leading-relaxed">{rec}</span>
                   </li>
                 ))}
+              </ul>
               </div>
             </div>
 

@@ -43,10 +43,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   };
 
   // Auto-expand group containing active item
-  const activeGroup = NAV_GROUPS.find(g => g.items.some(i => isActive(i.path)));
-  if (activeGroup && !expandedGroups.includes(activeGroup.label)) {
-    setExpandedGroups(prev => [...prev, activeGroup.label]);
-  }
+  useEffect(() => {
+    const activeGroup = NAV_GROUPS.find(g => g.items.some(i => isActive(i.path)));
+    if (activeGroup && !expandedGroups.includes(activeGroup.label)) {
+      setExpandedGroups(prev => [...prev, activeGroup.label]);
+    }
+  }, [location]);
 
   return (
     <>

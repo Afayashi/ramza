@@ -98,6 +98,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'التقارير',
     icon: BarChart2,
     items: [
+      { label: 'مركز التقارير', path: '/reports-center' },
       { label: 'التقارير المالية', path: '/financial-reports' },
       { label: 'الملخص المالي', path: '/financial-summary' },
       { label: 'التنبؤ المالي', path: '/financial-forecasting' },

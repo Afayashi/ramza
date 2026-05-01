@@ -61,6 +61,7 @@ import TechnicianManager from "./pages/TechnicianManager";
 import Inventory from "./pages/Inventory";
 
 // التقارير
+import ReportsCenter from "./pages/ReportsCenter";
 import FinancialReports from "./pages/FinancialReports";
 import FinancialSummary from "./pages/FinancialSummary";
 import FinancialForecasting from "./pages/FinancialForecasting";
@@ -158,6 +159,7 @@ function Router() {
       <Route path="/inventory" component={Inventory} />
 
       {/* التقارير */}
+      <Route path="/reports-center" component={ReportsCenter} />
       <Route path="/financial-reports" component={FinancialReports} />
       <Route path="/financial-summary" component={FinancialSummary} />
       <Route path="/financial-forecasting" component={FinancialForecasting} />
