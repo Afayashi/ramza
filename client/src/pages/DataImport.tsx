@@ -39,6 +39,81 @@ function saveReal(key: string, rows: object[]) {
 function clearReal(key: string) {
   try { localStorage.removeItem(LS_KEYS[key]); } catch {}
 }
+
+// ── مفاتيح التكرار لكل نوع بيانات ────────────────────────────────────────────
+const DEDUP_KEYS: Record<string, string[]> = {
+  contracts: [
+    'رقم_عقد_الإيجار', 'رقم_العقد', 'contract_number', 'ejar_id', 'id',
+    'رقم_العقد_الإيجاري', 'Contract_Number',
+  ],
+  properties: [
+    'رقم_الوحدة_الإيجار', 'property_number', 'رقم_العقار', 'ejar_id', 'id',
+  ],
+  units: [
+    'رقم_الوحدة', 'unit_number', 'ejar_unit_id', 'id',
+  ],
+  users: [
+    'رقم_الهوية', 'national_id', 'رقم_هوية_المستأجر', 'id',
+  ],
+  financial: [
+    'رقم_الفاتورة', 'invoice_number', 'id',
+  ],
+};
+
+// دمج صفوف جديدة مع موجودة بمنع التكرار
+// يُرجع { merged, added, duplicates }
+function mergeWithDedup(
+  existing: Record<string, any>[],
+  incoming: Record<string, any>[],
+  entityKey: string
+): { merged: Record<string, any>[]; added: number; duplicates: number } {
+  const keys = DEDUP_KEYS[entityKey] || ['id'];
+
+  // بناء خريطة للسجلات الموجودة حسب أول مفتاح متاح
+  const existingMap = new Map<string, Record<string, any>>();
+  for (const row of existing) {
+    for (const k of keys) {
+      const v = String(row[k] ?? '').trim();
+      if (v && v !== '' && v !== 'undefined') {
+        existingMap.set(`${k}::${v}`, row);
+        break;
+      }
+    }
+  }
+
+  let added = 0;
+  let duplicates = 0;
+  const merged = [...existing];
+
+  for (const row of incoming) {
+    let isDup = false;
+    for (const k of keys) {
+      const v = String((row as any)[k] ?? '').trim();
+      if (v && v !== '' && v !== 'undefined') {
+        if (existingMap.has(`${k}::${v}`)) {
+          isDup = true;
+          break;
+        }
+      }
+    }
+    if (isDup) {
+      duplicates++;
+    } else {
+      merged.push(row);
+      added++;
+      // أضفه للخريطة لمنع تكرار داخل الملف الجديد نفسه
+      for (const k of keys) {
+        const v = String((row as any)[k] ?? '').trim();
+        if (v && v !== '' && v !== 'undefined') {
+          existingMap.set(`${k}::${v}`, row);
+          break;
+        }
+      }
+    }
+  }
+
+  return { merged, added, duplicates };
+}
 // إزالة البيانات التجريبية العامة
 function clearAllDemo() {
   ['ejar_settings', 'ejar_api_creds'].forEach(k => {
@@ -213,6 +288,7 @@ export default function DataImport() {
   const [preview,  setPreview]  = useState<string | null>(null);
   const [saving,   setSaving]   = useState(false);
   const [saved,    setSaved]    = useState(false);
+  const [mergeStats, setMergeStats] = useState<{ added: number; duplicates: number } | null>(null);
 
   const handleFile = useCallback((key: string, rows: object[], sheetName: string, fileName: string) => {
     setFiles(prev => ({ ...prev, [key]: { rows, sheetName, fileName } }));
@@ -230,14 +306,36 @@ export default function DataImport() {
     const loaded = EJAR_FILES.filter(f => files[f.key]);
     if (!loaded.length) { toast.error('لم يتم تحميل أي ملف بعد'); return; }
     setSaving(true);
-    clearAllDemo();
-    await new Promise(r => setTimeout(r, 500));
+    setMergeStats(null);
+    await new Promise(r => setTimeout(r, 400));
+
+    let totalAdded = 0;
+    let totalDuplicates = 0;
+
     loaded.forEach(f => {
-      if (files[f.key]) saveReal(f.key, files[f.key]!.rows);
+      const incoming = files[f.key]!.rows as Record<string, any>[];
+      const existing: Record<string, any>[] = loadReal(f.key) || [];
+      const { merged, added, duplicates } = mergeWithDedup(existing, incoming, f.key);
+      saveReal(f.key, merged);
+      totalAdded += added;
+      totalDuplicates += duplicates;
+
+      // تحديث الـ state ليعكس عدد السجلات الفعلي بعد الدمج
+      setFiles(prev => ({
+        ...prev,
+        [f.key]: { rows: merged, sheetName: prev[f.key]?.sheetName || '', fileName: prev[f.key]?.fileName || '' },
+      }));
     });
+
     setSaving(false);
     setSaved(true);
-    toast.success(`✓ تم حفظ بيانات ${loaded.length} ملفات كبيانات حقيقية`);
+    setMergeStats({ added: totalAdded, duplicates: totalDuplicates });
+
+    if (totalDuplicates > 0) {
+      toast.success(`✓ تم إضافة ${totalAdded} سجل جديد — تم تجاهل ${totalDuplicates} مكرر`);
+    } else {
+      toast.success(`✓ تم حفظ ${totalAdded} سجل جديد بدون تكرار`);
+    }
   };
 
   const totalRecords = EJAR_FILES.reduce((s, f) => s + (files[f.key]?.rows.length ?? 0), 0);
@@ -314,19 +412,40 @@ export default function DataImport() {
                 className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-black text-sm text-white transition disabled:opacity-60"
                 style={{ background: saved ? '#059669' : DARK }}>
                 {saving
-                  ? <><Loader2 className="w-4 h-4 animate-spin" />جاري الحفظ...</>
+                  ? <><Loader2 className="w-4 h-4 animate-spin" />جاري الدمج وإزالة التكرار...</>
                   : saved
                     ? <><CheckCircle className="w-4 h-4" />تم الحفظ بنجاح</>
-                    : <><Database className="w-4 h-4" />حفظ البيانات الحقيقية</>}
+                    : <><Database className="w-4 h-4" />دمج البيانات (بدون تكرار)</>}
               </button>
               <button onClick={() => {
                 EJAR_FILES.forEach(f => { handleClear(f.key); });
                 setSaved(false);
+                setMergeStats(null);
               }}
                 className="px-4 py-3 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 text-sm font-bold transition flex items-center gap-2">
                 <Trash2 className="w-4 h-4" /> حذف الكل
               </button>
             </div>
+
+            {/* نتائج الدمج */}
+            {mergeStats && (
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+                  <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+                  <div>
+                    <p className="text-lg font-black text-emerald-700">{mergeStats.added.toLocaleString('ar')}</p>
+                    <p className="text-[11px] text-emerald-600">سجل جديد تم إضافته</p>
+                  </div>
+                </div>
+                <div className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${mergeStats.duplicates > 0 ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100'}`}>
+                  <XCircle className={`w-5 h-5 shrink-0 ${mergeStats.duplicates > 0 ? 'text-amber-500' : 'text-gray-300'}`} />
+                  <div>
+                    <p className={`text-lg font-black ${mergeStats.duplicates > 0 ? 'text-amber-700' : 'text-gray-400'}`}>{mergeStats.duplicates.toLocaleString('ar')}</p>
+                    <p className={`text-[11px] ${mergeStats.duplicates > 0 ? 'text-amber-600' : 'text-gray-400'}`}>سجل مكرر تم تجاهله</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

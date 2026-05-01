@@ -63,6 +63,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'تقييم المستأجرين', path: '/tenant-rating' },
       { label: 'إدارة الإيجارات', path: '/rent-management' },
       { label: 'منصة إيجار', path: '/ejar' },
+      { label: 'مزامنة إيجار', path: '/ejar-sync' },
     ],
   },
   {
@@ -132,6 +133,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'الإعدادات العامة', path: '/settings' },
       { label: 'إعدادات الشركة', path: '/company-settings' },
       { label: 'التكاملات', path: '/integrations' },
+      { label: 'إدارة التكاملات', path: '/integration-settings' },
       { label: 'قاعدة البيانات Supabase', path: '/database-setup' },
       { label: 'إدارة المستخدمين', path: '/user-management' },
       { label: 'استيراد البيانات', path: '/data-import' },

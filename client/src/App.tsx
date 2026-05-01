@@ -94,6 +94,7 @@ import UserManagement from "./pages/UserManagement";
 import CompanySettings from "./pages/CompanySettings";
 import RentManagement from "./pages/RentManagement";
 import Ejar from "./pages/Ejar";
+import EjarSync from "./pages/EjarSync";
 import Integrations from "./pages/Integrations";
 
 // Integration Settings Pages
@@ -104,6 +105,7 @@ import IntegrationStripeSettings from "./pages/IntegrationStripeSettings";
 import IntegrationSMSSettings from "./pages/IntegrationSMSSettings";
 import IntegrationGoogleSettings from "./pages/IntegrationGoogleSettings";
 import IntegrationSlackSettings from "./pages/IntegrationSlackSettings";
+import IntegrationSettings from "./pages/IntegrationSettings";
 
 function Router() {
   return (
@@ -192,6 +194,8 @@ function Router() {
       <Route path="/company-settings" component={CompanySettings} />
       <Route path="/rent-management" component={RentManagement} />
       <Route path="/ejar" component={Ejar} />
+      <Route path="/ejar-sync" component={EjarSync} />
+      <Route path="/integration-settings" component={IntegrationSettings} />
       <Route path="/integrations" component={Integrations} />
       <Route path="/integrations/ejar" component={IntegrationEjarSettings} />
       <Route path="/integrations/whatsapp" component={IntegrationWhatsAppSettings} />
