@@ -207,13 +207,47 @@ async function extractPdfText(file: File): Promise<string> {
 
 /** مساعد: اقتنص قيمة بين علامة ونهاية (أول 200 حرف) */
 function capture(text: string, ...markers: string[]): string {
+  const stopTokens = [
+    'الاسم', 'الجنسية', 'نوع الهوية', 'رقم الهوية', 'رقم الجوال', 'البريد الإلكتروني',
+    'تاريخ بداية مدة الإيجار', 'تاريخ نهاية مدة الإيجار', 'مكان إبرام العقد', 'تاريخ إبرام العقد',
+    'اسم منشأة الوساطة العقارية', 'رقم السجل التجاري', 'اسم الموظف',
+    'بيانات ممثل المؤجر', 'ممثل المؤجر',
+    'رقم المستند', 'جهة الإصدار', 'تاريخ الإصدار', 'مكان الإصدار', 'نوع الصك',
+    'العنوان الوطني', 'نوع بناء العقار', 'الغرض من استخدام العقار', 'عدد الطوابق', 'عدد الوحدات', 'عدد المواقف', 'عدد المصاعد',
+    'نوع الوحدة', 'رقم الوحدة', 'رقم الطابق', 'مساحة الوحدة', 'مؤثثة',
+    'رقم عداد الكهرباء', 'رقم عداد الغاز', 'رقم عداد المياه',
+    'قيمة الإيجار', 'مبلغ الضمان', 'أجرة الكهرباء', 'أجرة المياه', 'أجرة الغاز', 'أجرة المواقف',
+    'دفعة الإيجار الدورية', 'دفعة الإيجار الأخيرة', 'عدد دفعات الإيجار', 'دورة سداد الايجار', 'إجمالي قيمة العقد',
+    'Name', 'Nationality', 'ID Type', 'ID No.', 'Mobile No.', 'Email',
+    'Contract No.', 'Contract Type', 'Sealing Date', 'Sealing Contract Location', 'Location',
+    'Lessor Representative Data', 'Lessor Representative',
+    'Brokerage Entity Name', 'CR No.', 'Broker Name', 'Title Deed No:', 'Issuer:', 'Issue Date:', 'Place of Issue:',
+    'National Address', 'Property Type', 'Property Usage', 'Number of Floors', 'Number of Units', 'Number of Parking', 'Number of Elevators',
+    'Unit Type', 'Unit No.', 'Floor No.', 'Unit Area', 'Furnished',
+    'Electricity meter number', 'Gas meter number', 'Water meter number',
+    'Annual Rent', 'Security Deposit', 'Electricity Annual', 'Water Annual', 'Gas Annual', 'Parking Annual',
+    'Regular Rent Payment', 'Last Rent Payment', 'Number of Rent Payments', 'Rent payment cycle', 'Total Contract value'
+  ];
+
   for (const marker of markers) {
     const idx = text.indexOf(marker);
     if (idx !== -1) {
       const after = text.slice(idx + marker.length, idx + marker.length + 200).trim();
-      // أخذ حتى أول نقطة أو سطر جديد أو علامة تقسيم
-      const end = after.search(/\n|:|\s{3,}/);
-      return (end > 0 ? after.slice(0, end) : after.slice(0, 60)).trim();
+      let candidate = after;
+
+      let end = after.search(/\n|\s{3,}/);
+      if (end > 0) candidate = after.slice(0, end);
+
+      const tokenIndex = stopTokens
+        .map((token) => candidate.indexOf(token))
+        .filter((position) => position > 0)
+        .sort((a, b) => a - b)[0];
+
+      if (typeof tokenIndex === 'number') {
+        candidate = candidate.slice(0, tokenIndex);
+      }
+
+      return candidate.trim();
     }
   }
   return '';
@@ -226,6 +260,21 @@ function normalizeArabicOcr(input: string): string {
     .replace(/[\u064B-\u065F\u0670]/g, '')
     .replace(/\u0640/g, '')
     .replace(/\b(?:[\u0600-\u06FF]\s+){2,}[\u0600-\u06FF]\b/g, (match) => match.replace(/\s+/g, ''))
+    .replace(/تاريخبدايةم\s*دة\s*الإيجار/g, 'تاريخ بداية مدة الإيجار')
+    .replace(/تاريخنهايةم\s*دة\s*الإيجار/g, 'تاريخ نهاية مدة الإيجار')
+    .replace(/المملكةالعربية/g, 'المملكة العربية')
+    .replace(/الجنس\s*ية/g, 'الجنسية')
+    .replace(/نوعالهو\s*ية/g, 'نوع الهوية')
+    .replace(/نوع\s+الهو\s*ية/g, 'نوع الهوية')
+    .replace(/رقمالهو\s*ية/g, 'رقم الهوية')
+    .replace(/رقم\s+الهو\s*ية/g, 'رقم الهوية')
+    .replace(/رقمالهوية/g, 'رقم الهوية')
+    .replace(/رقمالجوال/g, 'رقم الجوال')
+    .replace(/البريدالإلكتروني/g, 'البريد الإلكتروني')
+    .replace(/بياناتمم\s*ثلالمؤجر/g, 'بيانات ممثل المؤجر')
+    .replace(/مم\s*ثلالمؤجر/g, 'ممثل المؤجر')
+    .replace(/مم\s*ثل/g, 'ممثل')
+    .replace(/اسممنشأةالوساطةالعقارية/g, 'اسم منشأة الوساطة العقارية')
     .replace(/ا\s*لاسم/g, 'الاسم')
     .replace(/االسم/g, 'الاسم')
     .replace(/ا\s*ل?جنسية/g, 'الجنسية')
@@ -245,8 +294,11 @@ function cleanExtractedValue(value?: string): string {
   if (!value) return '';
   return normalizeArabicOcr(value)
     .replace(/\s+/g, ' ')
-    .replace(/(?:Last Rent Payment|Regular Rent Payment|Total Contract value|Annual Rent|Amount|Cont|Num)/gi, '')
+    .replace(/^(?:Name|Nationality|ID Type|ID No\.?|Mobile No\.?|Email|Location|Lessor Representative Data|Lessor Representative)\s*/gi, '')
+    .replace(/\s*(?:Name|Nationality|ID Type|ID No\.?|Mobile No\.?|Email|Location|Lessor Representative Data|Lessor Representative)$/gi, '')
+    .replace(/(?:Last Rent Payment|Regular Rent Payment|Total Contract value|Annual Rent|Amount|Cont|Num|Name|Nationality|ID Type|ID No\.?|Mobile No\.?|Email|Lessor Representative Data|Lessor Representative)/gi, '')
     .replace(/[|]/g, ' ')
+    .replace(/\s{2,}/g, ' ')
     .trim();
 }
 
