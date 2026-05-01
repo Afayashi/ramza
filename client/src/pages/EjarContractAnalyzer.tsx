@@ -269,6 +269,20 @@ function normalizeArabicOcr(input: string): string {
     .replace(/رقمالهو\s*ية|رقمالهوية/g, 'رقم الهوية')
     .replace(/رقمالجوال|رقمالج\s*وال/g, 'رقم الجوال')
     .replace(/البريدالإلكتروني/g, 'البريد الإلكتروني')
+    .replace(/رقمالسجلالتجاري/g, 'رقم السجل التجاري')
+    .replace(/عنوانمنشأةالوساطةالعقارية|عنوانمنشأة الوساطةالعقارية/g, 'عنوان منشأة الوساطة العقارية')
+    .replace(/رقمالهاتف/g, 'رقم الهاتف')
+    .replace(/رقمالفاكس/g, 'رقم الفاكس')
+    .replace(/اسمالموظف/g, 'اسم الموظف')
+    .replace(/بياناتمستنداتالملكية|بياناتمستندات الملكية/g, 'بيانات مستندات الملكية')
+    .replace(/جهةالإصدار/g, 'جهة الإصدار')
+    .replace(/تاريخالإصدار/g, 'تاريخ الإصدار')
+    .replace(/مكانالإصدار/g, 'مكان الإصدار')
+    .replace(/نوعالصك/g, 'نوع الصك')
+    .replace(/الغرضمناستخدامالعقار|الغرضمناستخدام العقار/g, 'الغرض من استخدام العقار')
+    .replace(/رقمالطابق/g, 'رقم الطابق')
+    .replace(/مساحةالوحدة/g, 'مساحة الوحدة')
+    .replace(/مؤ\s*ثثة|مؤ\s*َّثثة/g, 'مؤثثة')
     .replace(/بياناتمم\s*ثل?المؤجر/g, 'بيانات ممثل المؤجر')
     .replace(/المؤجرممثل?بنفسه/g, 'المؤجر ممثل بنفسه')
     .replace(/اسممنشأةالوساطةالعقارية/g, 'اسم منشأة الوساطة العقارية')
@@ -316,6 +330,52 @@ function formatSar(value?: string): string {
   const n = Number(String(value).replace(/,/g, ''));
   if (Number.isNaN(n)) return cleanExtractedValue(value);
   return `${n.toLocaleString('ar-SA')} ر.س`;
+}
+
+function truncateAtTokens(value: string, tokens: string[]): string {
+  let result = value;
+  for (const token of tokens) {
+    const idx = result.indexOf(token);
+    if (idx > 0) result = result.slice(0, idx);
+  }
+  return result.trim();
+}
+
+function pickDate(value?: string): string {
+  const v = cleanExtractedValue(value);
+  const m = v.match(/\d{4}-\d{2}-\d{2}/);
+  return m ? m[0] : truncateAtTokens(v, ['Tenancy Start Date', 'Tenancy End Date', 'Lessor Data']);
+}
+
+function pickId(value?: string): string {
+  const v = cleanExtractedValue(value);
+  const m = v.match(/\d{10,}/);
+  return m ? m[0] : '';
+}
+
+function pickPhone(value?: string): string {
+  const v = cleanExtractedValue(value);
+  const m = v.match(/\+?\d{9,15}/);
+  return m ? m[0] : '';
+}
+
+function pickNationality(value?: string): string {
+  const v = cleanExtractedValue(value);
+  return truncateAtTokens(v, ['نوع الهوية', 'ID Type', 'رقم الهوية', 'ID No.', 'رقم الجوال', 'Mobile No.']);
+}
+
+function pickIdType(value?: string): string {
+  const v = truncateAtTokens(cleanExtractedValue(value), ['رقم الهوية', 'ID No.', 'رقم الجوال', 'Mobile No.', 'البريد الإلكتروني', 'Email']);
+  if (/\d/.test(v)) return '';
+  return v;
+}
+
+function pickEmail(value?: string): string {
+  const v = cleanExtractedValue(value);
+  const m = v.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  if (m) return m[0];
+  if (v === '-' || v === '—') return '-';
+  return '';
 }
 
 /** استخراج بيانات عقد إيجار من نص PDF */
@@ -496,6 +556,47 @@ function parseEjarPdfText(text: string): EjarPdfContract {
       (c as any)[key] = (c[key] as string).slice(0, 80) + '...';
     }
   }
+
+  // تنظيف نهائي دقيق حسب نوع الحقل
+  c.startDate = pickDate(c.startDate);
+  c.endDate = pickDate(c.endDate);
+  c.contractDate = pickDate(c.contractDate);
+
+  c.ownerNationality = pickNationality(c.ownerNationality);
+  c.tenantNationality = pickNationality(c.tenantNationality);
+
+  c.ownerIdType = pickIdType(c.ownerIdType);
+  c.tenantIdType = pickIdType(c.tenantIdType);
+
+  c.ownerId = pickId(c.ownerId);
+  c.tenantId = pickId(c.tenantId);
+
+  c.ownerPhone = pickPhone(c.ownerPhone);
+  c.tenantPhone = pickPhone(c.tenantPhone);
+  c.brokerPhone = pickPhone(c.brokerPhone);
+
+  c.ownerEmail = pickEmail(c.ownerEmail) || '-';
+  c.tenantEmail = pickEmail(c.tenantEmail) || '-';
+  c.brokerEmail = pickEmail(c.brokerEmail) || '-';
+
+  c.contractLocation = truncateAtTokens(cleanExtractedValue(c.contractLocation), ['تاريخ إبرام العقد', 'Sealing Date']);
+  c.brokerCompany = truncateAtTokens(cleanExtractedValue(c.brokerCompany), ['عنوان منشأة الوساطة العقارية', 'Brokerage Entity Address', 'رقم السجل التجاري', 'CR No.']);
+  c.brokerCR = pickId(c.brokerCR);
+  c.brokerName = truncateAtTokens(cleanExtractedValue(c.brokerName), ['رقم الهاتف', 'Landline No.', 'رقم الفاكس', 'Fax No.']);
+  c.titleDeedNumber = pickId(c.titleDeedNumber) || cleanExtractedValue(c.titleDeedNumber);
+  c.titleDeedIssuer = truncateAtTokens(cleanExtractedValue(c.titleDeedIssuer), ['تاريخ الإصدار', 'Issue Date']);
+  c.titleDeedDate = truncateAtTokens(cleanExtractedValue(c.titleDeedDate), ['مكان الإصدار', 'Place of Issue']);
+  c.titleDeedLocation = truncateAtTokens(cleanExtractedValue(c.titleDeedLocation), ['نوع الصك', 'Title deed type']);
+  c.titleDeedType = truncateAtTokens(cleanExtractedValue(c.titleDeedType), ['بيانات العقار', 'Property Data']);
+
+  c.propertyType = truncateAtTokens(cleanExtractedValue(c.propertyType), ['الغرض من استخدام العقار', 'Property Usage']);
+  c.propertyUsage = truncateAtTokens(cleanExtractedValue(c.propertyUsage), ['عدد الطوابق', 'Number of Floors']);
+  c.unitNumber = truncateAtTokens(cleanExtractedValue(c.unitNumber), ['رقم الطابق', 'Floor No.']);
+  c.unitFloor = extractNumberValue(c.unitFloor);
+  c.unitArea = extractNumberValue(c.unitArea);
+  c.electricityMeter = pickId(c.electricityMeter) || cleanExtractedValue(c.electricityMeter);
+  c.gasMeter = pickId(c.gasMeter) || cleanExtractedValue(c.gasMeter);
+  c.waterMeter = pickId(c.waterMeter) || cleanExtractedValue(c.waterMeter);
 
   return c;
 }
