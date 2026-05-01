@@ -64,6 +64,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'إدارة الإيجارات', path: '/rent-management' },
       { label: 'منصة إيجار', path: '/ejar' },
       { label: 'مزامنة إيجار', path: '/ejar-sync' },
+      { label: 'تحليل عقود إيجار', path: '/ejar-contract-analyzer' },
     ],
   },
   {

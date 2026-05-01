@@ -95,6 +95,14 @@ export default function PropertyOfficialReport() {
     { name: 'Owner' }, { name: 'Tenant' }
   ]);
 
+  // بيانات عقود إيجار المستوردة
+  const allEjarContracts = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('real_contracts');
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  }, []);
+
   const [selectedId, setSelectedId] = useState<string>('');
   const [reportDate] = useState(() => new Date().toLocaleDateString('ar-SA'));
   const [reportNum] = useState(() => `RPT-${Date.now().toString().slice(-6)}`);
@@ -201,6 +209,17 @@ export default function PropertyOfficialReport() {
       totalDocumentationFees, totalBrokerageFees, avgLeaseMonths,
     };
   }, [activePropertyId, data, properties]);
+
+  // بيانات إيجار المرتبطة بالعقار المحدد
+  const ejarPropertyContracts = useMemo(() => {
+    if (!report?.prop) return allEjarContracts;
+    const propName = String(report.prop['اسم_العقار'] || report.prop.name || '').trim().toLowerCase();
+    if (!propName) return allEjarContracts;
+    return allEjarContracts.filter((c: any) => {
+      const cn = String(c['اسم_العقار'] || c.propertyName || c['العقار'] || '').toLowerCase();
+      return cn.includes(propName) || propName.includes(cn);
+    });
+  }, [allEjarContracts, report]);
 
   // ── وظيفة الطباعة ─────────────────────────
   const handlePrint = () => window.print();
@@ -717,6 +736,97 @@ export default function PropertyOfficialReport() {
                 <Field label="متوسط مدة العقد (بالأشهر)" value={report.avgLeaseMonths || '—'} />
                 <Field label="العقود النشطة" value={report.activeLeases.length} />
               </div>
+
+              {/* بيانات إيجار المستوردة */}
+              {allEjarContracts.length > 0 && (
+                <div className="mt-6 print:mt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-4 rounded-full bg-[#C8A951]" />
+                    <span className="font-bold text-sm text-slate-700">بيانات منصة إيجار المستوردة</span>
+                    <span className="text-xs bg-[#C8A951]/15 text-[#92710a] font-bold px-2 py-0.5 rounded-full">
+                      {ejarPropertyContracts.length > 0 ? ejarPropertyContracts.length : allEjarContracts.length} عقد
+                      {ejarPropertyContracts.length > 0 && ejarPropertyContracts.length < allEjarContracts.length ? ' مرتبط بهذا العقار' : ' إجمالي'}
+                    </span>
+                  </div>
+                  {(() => {
+                    const contracts = ejarPropertyContracts.length > 0 ? ejarPropertyContracts : allEjarContracts;
+                    const activeCount = contracts.filter((c: any) => {
+                      const s = String(c['حالة_العقد'] || c.status || '').toLowerCase();
+                      return s.includes('ساري') || s.includes('نشط') || s.includes('active');
+                    }).length;
+                    const expiredCount = contracts.filter((c: any) => {
+                      const s = String(c['حالة_العقد'] || c.status || '').toLowerCase();
+                      return s.includes('منته') || s.includes('expired');
+                    }).length;
+                    const totalAnnualRent = contracts.reduce((sum: number, c: any) => {
+                      const v = parseFloat(String(c['الإيجار_السنوي'] || c.annualRent || c['قيمة_الإيجار'] || 0).replace(/,/g, ''));
+                      return sum + (isNaN(v) ? 0 : v);
+                    }, 0);
+                    const tenants = contracts.map((c: any) => c['اسم_المستأجر'] || c.tenantName || '').filter(Boolean);
+                    return (
+                      <>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 print:gap-2">
+                          <Field label="إجمالي الإيجار السنوي (ر.س)" value={totalAnnualRent > 0 ? totalAnnualRent.toLocaleString('ar-SA') : '—'} />
+                          <Field label="العقود السارية" value={activeCount} />
+                          <Field label="العقود المنتهية" value={expiredCount} />
+                          <Field label="إجمالي العقود" value={contracts.length} />
+                        </div>
+                        {tenants.length > 0 && (
+                          <div className="mb-4">
+                            <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">المستأجرون</div>
+                            <div className="flex flex-wrap gap-2">
+                              {tenants.slice(0, 8).map((t: string, i: number) => (
+                                <span key={i} className="text-[10px] font-medium bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg print:text-[7pt]">{t}</span>
+                              ))}
+                              {tenants.length > 8 && <span className="text-[10px] text-slate-400">+{tenants.length - 8} آخرين</span>}
+                            </div>
+                          </div>
+                        )}
+                        <div className="overflow-x-auto rounded-xl border border-slate-200 print:rounded print:border-slate-300">
+                          <table className="w-full text-xs border-collapse print:text-[7pt]">
+                            <thead>
+                              <tr className="bg-[#1a1209]">
+                                {['رقم العقد', 'المستأجر', 'الوحدة', 'الإيجار السنوي', 'البداية', 'النهاية', 'الحالة'].map(h => (
+                                  <th key={h} className="px-2.5 py-2 text-right text-[10px] font-bold text-[#C8A951] print:px-1.5 print:py-1.5">{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {contracts.slice(0, 10).map((c: any, i: number) => {
+                                const status = String(c['حالة_العقد'] || c.status || '');
+                                const isActive = status.toLowerCase().includes('ساري') || status.toLowerCase().includes('نشط');
+                                const isExpired = status.toLowerCase().includes('منته') || status.toLowerCase().includes('expired');
+                                return (
+                                  <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'}>
+                                    <td className="border-b border-slate-100 px-2.5 py-1.5 font-medium print:px-1.5 print:py-1">{c['رقم_عقد_الإيجار'] || c['رقم_العقد'] || c.contractNumber || `—`}</td>
+                                    <td className="border-b border-slate-100 px-2.5 py-1.5 print:px-1.5 print:py-1">{c['اسم_المستأجر'] || c.tenantName || '—'}</td>
+                                    <td className="border-b border-slate-100 px-2.5 py-1.5 print:px-1.5 print:py-1">{c['رقم_الوحدة'] || c.unitNumber || '—'}</td>
+                                    <td className="border-b border-slate-100 px-2.5 py-1.5 font-semibold text-[#C8A951] print:px-1.5 print:py-1">
+                                      {c['الإيجار_السنوي'] || c.annualRent ? `${Number(String(c['الإيجار_السنوي'] || c.annualRent).replace(/,/g,'')).toLocaleString('ar-SA')} ر.س` : '—'}
+                                    </td>
+                                    <td className="border-b border-slate-100 px-2.5 py-1.5 text-slate-500 print:px-1.5 print:py-1">{c['تاريخ_بداية_العقد'] || c.startDate || '—'}</td>
+                                    <td className="border-b border-slate-100 px-2.5 py-1.5 text-slate-500 print:px-1.5 print:py-1">{c['تاريخ_نهاية_العقد'] || c.endDate || '—'}</td>
+                                    <td className="border-b border-slate-100 px-2.5 py-1.5 print:px-1.5 print:py-1">
+                                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold print:px-1 ${
+                                        isActive ? 'bg-emerald-100 text-emerald-700' :
+                                        isExpired ? 'bg-red-100 text-red-600' :
+                                        'bg-slate-100 text-slate-500'
+                                      }`}>{status || 'غير محدد'}</span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                        {contracts.length > 10 && (
+                          <p className="text-xs text-slate-400 text-center mt-2">يُعرض 10 من أصل {contracts.length} عقد — للتفاصيل الكاملة زر صفحة تحليل عقود إيجار</p>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
               </div>
             </div>
 

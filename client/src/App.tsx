@@ -95,6 +95,7 @@ import CompanySettings from "./pages/CompanySettings";
 import RentManagement from "./pages/RentManagement";
 import Ejar from "./pages/Ejar";
 import EjarSync from "./pages/EjarSync";
+import EjarContractAnalyzer from "./pages/EjarContractAnalyzer";
 import Integrations from "./pages/Integrations";
 
 // Integration Settings Pages
@@ -195,6 +196,7 @@ function Router() {
       <Route path="/rent-management" component={RentManagement} />
       <Route path="/ejar" component={Ejar} />
       <Route path="/ejar-sync" component={EjarSync} />
+      <Route path="/ejar-contract-analyzer" component={EjarContractAnalyzer} />
       <Route path="/integration-settings" component={IntegrationSettings} />
       <Route path="/integrations" component={Integrations} />
       <Route path="/integrations/ejar" component={IntegrationEjarSettings} />
