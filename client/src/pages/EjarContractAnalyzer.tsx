@@ -890,11 +890,11 @@ function DropZone({ onFile }: { onFile: (f: File) => void }) {
         </div>
         <div>
           <p className="font-black text-gray-800">ارفع ملف العقود من إيجار</p>
-          <p className="text-sm text-gray-500 mt-1">اسحب وأفلت أو انقر للاختيار</p>
-          <p className="text-xs text-gray-400 mt-2">PDF أو Excel (.xlsx, .xls) أو CSV</p>
+          <p className="text-sm text-gray-500 mt-1">اسحب الملف وأفلته هنا أو انقر للاختيار</p>
+          <p className="text-xs text-gray-400 mt-2">الملفات المدعومة: PDF أو Excel (.xlsx, .xls) أو CSV</p>
         </div>
         <div className="flex gap-2 flex-wrap justify-center mt-2">
-          {['عقد_إيجار.pdf', 'عقود_إيجار.xlsx', 'تصدير_إيجار.csv', 'Ejar_Contracts.xlsx'].map(name => (
+          {['عقد_إيجار.pdf', 'عقود_إيجار.xlsx', 'تصدير_إيجار.csv'].map(name => (
             <span key={name} className="text-xs px-2 py-1 bg-white border border-gray-200 rounded-lg text-gray-500">{name}</span>
           ))}
         </div>
@@ -930,7 +930,7 @@ function AnalysisSummary({ contracts }: { contracts: ContractData[] }) {
         { label: 'عقود سارية', val: active, color: '#059669', bg: '#ECFDF5' },
         { label: 'عقود منتهية', val: expired, color: '#DC2626', bg: '#FEF2F2' },
         { label: 'مستأجرون', val: uniqueTenants, color: '#7C3AED', bg: '#EDE9FE' },
-        { label: 'الإيجار السنوي', val: totalRent > 0 ? `${(totalRent / 1000).toFixed(0)}k ر.س` : '—', color: '#0891B2', bg: '#E0F7FA' },
+        { label: 'الإيجار السنوي', val: totalRent > 0 ? `${Math.round(totalRent / 1000).toLocaleString('ar-SA')} ألف ر.س` : '—', color: '#0891B2', bg: '#E0F7FA' },
       ].map(s => (
         <div key={s.label} className="rounded-2xl p-4 text-center" style={{ background: s.bg }}>
           <p className="text-2xl font-black" style={{ color: s.color }}>{s.val}</p>
@@ -1024,7 +1024,7 @@ export default function EjarContractAnalyzer() {
         toast.success(`تم تحليل ${data.length} عقد من الملف`);
       }
     } catch (err) {
-      toast.error('فشل قراءة الملف — تأكد أنه PDF/Excel/CSV صحيح');
+      toast.error('تعذر قراءة الملف. تأكد أن الصيغة PDF أو Excel أو CSV');
       setPdfContract(null);
       setContracts([]);
     }
@@ -1079,7 +1079,7 @@ export default function EjarContractAnalyzer() {
               استرداد وتحليل عقود إيجار
             </h1>
             <p className="text-gray-500 text-sm mt-0.5">
-              رفع ملف PDF أو Excel من منصة إيجار وتحليل بيانات العقد تلقائياً
+              ارفع ملف عقد بصيغة PDF أو ملف جداول بصيغة Excel لتحليل البيانات تلقائيا
             </p>
           </div>
           {contracts.length > 0 && (
@@ -1105,9 +1105,9 @@ export default function EjarContractAnalyzer() {
           <div className="text-sm text-amber-800">
             <p className="font-black mb-1">كيف تستخرج ملف العقود من إيجار؟</p>
             <ol className="list-decimal list-inside space-y-0.5 text-xs text-amber-700">
-              <li>سجّل دخولك على <strong>ejar.sa</strong></li>
+              <li>سجّل دخولك إلى <strong>منصة إيجار</strong></li>
               <li>اذهب إلى قسم <strong>العقود</strong></li>
-              <li>انقر على زر <strong>تصدير Excel</strong> أو <strong>Export</strong></li>
+              <li>انقر على زر <strong>تصدير</strong> ثم اختر <strong>Excel</strong> أو نسخة <strong>PDF</strong></li>
               <li>ارفع الملف هنا — سيتم التحليل تلقائياً</li>
             </ol>
           </div>

@@ -156,7 +156,7 @@ export default function EjarSync() {
             </div>
             <div>
               <h2 className="text-sm font-bold text-slate-900">الدخول بحساب إيجار (النفاذ الوطني)</h2>
-              <p className="text-[11px] text-slate-400 mt-0.5">استخدم نفس بيانات دخولك في ejar.sa</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">استخدم بيانات دخولك نفسها في منصة إيجار</p>
             </div>
           </div>
 
@@ -171,7 +171,7 @@ export default function EjarSync() {
                 dir="ltr"
                 value={nationalId}
                 onChange={e => setNationalId(e.target.value)}
-                placeholder="10XXXXXXXX"
+                placeholder="مثال: 10XXXXXXXX"
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30 focus:border-[#C8A951]/50 transition-all"
               />
             </div>
@@ -196,7 +196,7 @@ export default function EjarSync() {
               ) : syncDone ? (
                 <><CheckCircle2 size={15} className="text-emerald-400" /> تمت المزامنة بنجاح</>
               ) : (
-                <>← الدخول ومزامنة</>
+                <>تسجيل الدخول والمزامنة</>
               )}
             </button>
 

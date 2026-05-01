@@ -198,10 +198,10 @@ export default function IntegrationSettings() {
         />
 
         <IntegCard
-          icon="📱" name="Msegat – SMS" desc="إرسال رسائل SMS للمستأجرين والملاك"
+          icon="📱" name="مسجات (Msegat)" desc="إرسال رسائل نصية قصيرة للمستأجرين والملاك"
           status="connected"
           features={['رسائل SMS جماعية', 'رسائل مخصصة', 'جدولة الإرسال', 'تقارير الإرسال']}
-          note="TAQNYAT_BEARER_TOKEN مُعدّ"
+          note="تم إعداد رمز الربط لخدمة الرسائل"
           actionLabel="إدارة الربط"
           onAction={() => window.open('https://taqnyat.sa', '_blank')}
           docsUrl="https://taqnyat.sa"
@@ -214,7 +214,7 @@ export default function IntegrationSettings() {
           actionLabel="ربط الآن"
           onAction={() => window.open('https://developers.facebook.com/docs/whatsapp', '_blank')}
           docsUrl="https://developers.facebook.com/docs/whatsapp"
-          note="WHATSAPP_ACCESS_TOKEN مُعدّ"
+          note="تم إعداد رمز الوصول لخدمة واتساب"
         />
       </div>
 
@@ -232,7 +232,7 @@ export default function IntegrationSettings() {
         />
 
         <IntegCard
-          icon="💼" name="QuickBooks" desc="ربط مع QuickBooks لمزامنة الحسابات والفواتير"
+          icon="💼" name="كويك بوكس (QuickBooks)" desc="ربط مع كويك بوكس لمزامنة الحسابات والفواتير"
           status="pending"
           features={['مزامنة الفواتير', 'متابعة المصروفات', 'تتبع الدخل', 'التقارير المالية', 'إدارة الضرائب']}
           actionLabel="ربط الآن"
