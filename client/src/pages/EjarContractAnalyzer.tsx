@@ -163,9 +163,43 @@ async function extractPdfText(file: File): Promise<string> {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    const pageText = content.items
-      .map((item: any) => item.str)
-      .join(' ');
+    const positionedItems = content.items
+      .filter((item: any) => item.str && String(item.str).trim())
+      .map((item: any) => ({
+        str: String(item.str),
+        x: Number(item.transform?.[4] || 0),
+        y: Number(item.transform?.[5] || 0),
+        width: Number(item.width || 0),
+      }));
+
+    const lines = new Map<number, typeof positionedItems>();
+    for (const item of positionedItems) {
+      const key = Math.round(item.y / 3) * 3;
+      const existing = lines.get(key) || [];
+      existing.push(item);
+      lines.set(key, existing);
+    }
+
+    const pageText = Array.from(lines.entries())
+      .sort((a, b) => b[0] - a[0])
+      .map(([, lineItems]) => {
+        const lineText = lineItems
+          .sort((a, b) => b.x - a.x)
+          .reduce((acc, item, index, array) => {
+            if (index === 0) return item.str;
+
+            const prev = array[index - 1];
+            const prevLooksFragmented = /^[\u0600-\u06FF\d./-]{1,2}$/.test(prev.str.trim());
+            const currentLooksFragmented = /^[\u0600-\u06FF\d./-]{1,2}$/.test(item.str.trim());
+            const gap = Math.abs(prev.x - item.x - item.width);
+            const separator = prevLooksFragmented || currentLooksFragmented || gap < 8 ? '' : ' ';
+            return acc + separator + item.str;
+          }, '');
+
+        return lineText;
+      })
+      .join('\n');
+
     fullText += pageText + '\n';
   }
   return fullText;
@@ -191,6 +225,7 @@ function normalizeArabicOcr(input: string): string {
     .normalize('NFKC')
     .replace(/[\u064B-\u065F\u0670]/g, '')
     .replace(/\u0640/g, '')
+    .replace(/\b(?:[\u0600-\u06FF]\s+){2,}[\u0600-\u06FF]\b/g, (match) => match.replace(/\s+/g, ''))
     .replace(/ا\s*لاسم/g, 'الاسم')
     .replace(/االسم/g, 'الاسم')
     .replace(/ا\s*ل?جنسية/g, 'الجنسية')
