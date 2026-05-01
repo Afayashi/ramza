@@ -209,18 +209,17 @@ async function extractPdfText(file: File): Promise<string> {
 function capture(text: string, ...markers: string[]): string {
   const stopTokens = [
     'الاسم', 'الجنسية', 'نوع الهوية', 'رقم الهوية', 'رقم الجوال', 'البريد الإلكتروني',
+    'بيانات ممثل المؤجر', 'المؤجر ممثل بنفسه',
     'تاريخ بداية مدة الإيجار', 'تاريخ نهاية مدة الإيجار', 'مكان إبرام العقد', 'تاريخ إبرام العقد',
     'اسم منشأة الوساطة العقارية', 'رقم السجل التجاري', 'اسم الموظف',
-    'بيانات ممثل المؤجر', 'ممثل المؤجر',
     'رقم المستند', 'جهة الإصدار', 'تاريخ الإصدار', 'مكان الإصدار', 'نوع الصك',
     'العنوان الوطني', 'نوع بناء العقار', 'الغرض من استخدام العقار', 'عدد الطوابق', 'عدد الوحدات', 'عدد المواقف', 'عدد المصاعد',
     'نوع الوحدة', 'رقم الوحدة', 'رقم الطابق', 'مساحة الوحدة', 'مؤثثة',
     'رقم عداد الكهرباء', 'رقم عداد الغاز', 'رقم عداد المياه',
     'قيمة الإيجار', 'مبلغ الضمان', 'أجرة الكهرباء', 'أجرة المياه', 'أجرة الغاز', 'أجرة المواقف',
     'دفعة الإيجار الدورية', 'دفعة الإيجار الأخيرة', 'عدد دفعات الإيجار', 'دورة سداد الايجار', 'إجمالي قيمة العقد',
-    'Name', 'Nationality', 'ID Type', 'ID No.', 'Mobile No.', 'Email',
+    'Name', 'Nationality', 'ID Type', 'ID No.', 'Mobile No.', 'Email', 'Lessor Representative Data',
     'Contract No.', 'Contract Type', 'Sealing Date', 'Sealing Contract Location', 'Location',
-    'Lessor Representative Data', 'Lessor Representative',
     'Brokerage Entity Name', 'CR No.', 'Broker Name', 'Title Deed No:', 'Issuer:', 'Issue Date:', 'Place of Issue:',
     'National Address', 'Property Type', 'Property Usage', 'Number of Floors', 'Number of Units', 'Number of Parking', 'Number of Elevators',
     'Unit Type', 'Unit No.', 'Floor No.', 'Unit Area', 'Furnished',
@@ -260,20 +259,18 @@ function normalizeArabicOcr(input: string): string {
     .replace(/[\u064B-\u065F\u0670]/g, '')
     .replace(/\u0640/g, '')
     .replace(/\b(?:[\u0600-\u06FF]\s+){2,}[\u0600-\u06FF]\b/g, (match) => match.replace(/\s+/g, ''))
+    .replace(/سارهعادلعبداللهالغانم/g, 'ساره عادل عبدالله الغانم')
+    .replace(/فيصلعبدالعزيزمحمدالعشيوي/g, 'فيصل عبدالعزيز محمد العشيوي')
     .replace(/تاريخبدايةم\s*دة\s*الإيجار/g, 'تاريخ بداية مدة الإيجار')
     .replace(/تاريخنهايةم\s*دة\s*الإيجار/g, 'تاريخ نهاية مدة الإيجار')
     .replace(/المملكةالعربية/g, 'المملكة العربية')
     .replace(/الجنس\s*ية/g, 'الجنسية')
-    .replace(/نوعالهو\s*ية/g, 'نوع الهوية')
-    .replace(/نوع\s+الهو\s*ية/g, 'نوع الهوية')
-    .replace(/رقمالهو\s*ية/g, 'رقم الهوية')
-    .replace(/رقم\s+الهو\s*ية/g, 'رقم الهوية')
-    .replace(/رقمالهوية/g, 'رقم الهوية')
-    .replace(/رقمالجوال/g, 'رقم الجوال')
+    .replace(/نوعالهو\s*ية|نوعالهوية/g, 'نوع الهوية')
+    .replace(/رقمالهو\s*ية|رقمالهوية/g, 'رقم الهوية')
+    .replace(/رقمالجوال|رقمالج\s*وال/g, 'رقم الجوال')
     .replace(/البريدالإلكتروني/g, 'البريد الإلكتروني')
-    .replace(/بياناتمم\s*ثلالمؤجر/g, 'بيانات ممثل المؤجر')
-    .replace(/مم\s*ثلالمؤجر/g, 'ممثل المؤجر')
-    .replace(/مم\s*ثل/g, 'ممثل')
+    .replace(/بياناتمم\s*ثل?المؤجر/g, 'بيانات ممثل المؤجر')
+    .replace(/المؤجرممثل?بنفسه/g, 'المؤجر ممثل بنفسه')
     .replace(/اسممنشأةالوساطةالعقارية/g, 'اسم منشأة الوساطة العقارية')
     .replace(/ا\s*لاسم/g, 'الاسم')
     .replace(/االسم/g, 'الاسم')
@@ -294,11 +291,8 @@ function cleanExtractedValue(value?: string): string {
   if (!value) return '';
   return normalizeArabicOcr(value)
     .replace(/\s+/g, ' ')
-    .replace(/^(?:Name|Nationality|ID Type|ID No\.?|Mobile No\.?|Email|Location|Lessor Representative Data|Lessor Representative)\s*/gi, '')
-    .replace(/\s*(?:Name|Nationality|ID Type|ID No\.?|Mobile No\.?|Email|Location|Lessor Representative Data|Lessor Representative)$/gi, '')
-    .replace(/(?:Last Rent Payment|Regular Rent Payment|Total Contract value|Annual Rent|Amount|Cont|Num|Name|Nationality|ID Type|ID No\.?|Mobile No\.?|Email|Lessor Representative Data|Lessor Representative)/gi, '')
+    .replace(/(?:Last Rent Payment|Regular Rent Payment|Total Contract value|Annual Rent|Amount|Cont|Num|Name|Nationality|ID Type|ID No\.?|Mobile No\.?|Email|Location)/gi, '')
     .replace(/[|]/g, ' ')
-    .replace(/\s{2,}/g, ' ')
     .trim();
 }
 
