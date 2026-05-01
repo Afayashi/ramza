@@ -2,11 +2,12 @@
  * نموذج تقرير بيانات العقار الرسمي - رمز الإبداع لإدارة الأملاك
  * مهيأ للطباعة الورقية والحفظ بصيغة PDF لمالك العقار
  */
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import {
   Building2, Printer, FileText, MapPin, Users, DollarSign,
   Wrench, TrendingUp, Home, Shield, CheckCircle2,
-  AlertCircle, Star, ClipboardList, Download, Loader2, BarChart3, Award
+  AlertCircle, Star, ClipboardList, Download, Loader2, BarChart3, Award,
+  Search, ChevronDown, X
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import PageHeader from '@/components/shared/PageHeader';
@@ -97,10 +98,36 @@ export default function PropertyOfficialReport() {
   const [selectedId, setSelectedId] = useState<string>('');
   const [reportDate] = useState(() => new Date().toLocaleDateString('ar-SA'));
   const [reportNum] = useState(() => `RPT-${Date.now().toString().slice(-6)}`);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const properties = data.Property || [];
-  const requestedPropertyId = useMemo(() => {
-    const params = new URLSearchParams(window.location.search);
+
+  // إغلاق القائمة عند النقر خارجها
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // فلترة العقارات حسب البحث
+  const filteredProperties = useMemo(() =>
+    properties.filter(p => {
+      const name = String(p['اسم_العقار'] || p.name || '').toLowerCase();
+      const city = String(p['المدينة'] || p.city || '').toLowerCase();
+      const q = searchQuery.toLowerCase();
+      return name.includes(q) || city.includes(q);
+    }),
+    [properties, searchQuery]
+  );
+
+  const requestedPropertyId = useMemo(() => {    const params = new URLSearchParams(window.location.search);
     return params.get('propertyId') || params.get('id') || '';
   }, []);
 
@@ -264,22 +291,121 @@ export default function PropertyOfficialReport() {
           description="نسخة رسمية مهيأة للطباعة الورقية والحفظ بصيغة PDF لمالك العقار"
         />
 
-        {/* اختيار العقار */}
+        {/* اختيار العقار - قائمة بحث */}
         <div className="bg-card border border-border rounded-xl p-4 mb-4">
-          <p className="text-xs text-muted-foreground mb-3 font-medium">اختر العقار لإعداد التقرير:</p>
-          <div className="flex flex-wrap gap-2">
-            {properties.map(p => (
-              <button
-                key={p.id}
-                onClick={() => setSelectedId(String(p.id))}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all
-                  ${String(p.id) === activePropertyId
-                    ? 'border-[#C8A951] bg-[#C8A951]/10 text-[#C8A951]'
-                    : 'border-border bg-sidebar text-muted-foreground hover:border-[#C8A951]/40'}`}>
-                <Building2 size={11} />
-                {p['اسم_العقار'] || p.name || 'بدون اسم'}
-              </button>
-            ))}
+          <p className="text-xs text-muted-foreground mb-3 font-medium flex items-center gap-1.5">
+            <Building2 size={12} className="text-[#C8A951]" />
+            اختر العقار لإعداد التقرير الرسمي
+          </p>
+
+          <div className="relative" ref={dropdownRef}>
+            {/* حقل البحث */}
+            <button
+              type="button"
+              onClick={() => { setDropdownOpen(v => !v); setTimeout(() => searchRef.current?.focus(), 50); }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-sidebar hover:border-[#C8A951]/50 transition-all text-right"
+            >
+              <Building2 size={15} className="text-[#C8A951] shrink-0" />
+              <span className={`flex-1 text-sm truncate ${activePropertyId ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                {activePropertyId
+                  ? (properties.find(p => String(p.id) === activePropertyId)?.['اسم_العقار']
+                    || properties.find(p => String(p.id) === activePropertyId)?.name
+                    || 'بدون اسم')
+                  : 'انقر لاختيار عقار...'}
+              </span>
+              {activePropertyId && (
+                <span className="text-[10px] text-[#C8A951] bg-[#C8A951]/10 px-2 py-0.5 rounded-full shrink-0 font-semibold">
+                  {properties.find(p => String(p.id) === activePropertyId)?.['المدينة']
+                    || properties.find(p => String(p.id) === activePropertyId)?.city || ''}
+                </span>
+              )}
+              <ChevronDown size={14} className={`text-muted-foreground shrink-0 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* القائمة المنسدلة مع البحث */}
+            {dropdownOpen && (
+              <div className="absolute top-full mt-2 right-0 left-0 z-50 bg-card border border-border rounded-xl shadow-xl overflow-hidden">
+                {/* حقل البحث */}
+                <div className="p-3 border-b border-border">
+                  <div className="flex items-center gap-2 bg-sidebar rounded-lg px-3 py-2">
+                    <Search size={13} className="text-muted-foreground shrink-0" />
+                    <input
+                      ref={searchRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      placeholder="ابحث باسم العقار أو المدينة..."
+                      className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+                      dir="rtl"
+                    />
+                    {searchQuery && (
+                      <button onClick={() => setSearchQuery('')}>
+                        <X size={12} className="text-muted-foreground hover:text-foreground" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* قائمة العقارات */}
+                <div className="max-h-64 overflow-y-auto">
+                  {filteredProperties.length === 0 ? (
+                    <div className="py-8 text-center text-sm text-muted-foreground">
+                      لا توجد نتائج لـ "{searchQuery}"
+                    </div>
+                  ) : (
+                    filteredProperties.map(p => {
+                      const pid = String(p.id);
+                      const isSelected = pid === activePropertyId;
+                      const name = p['اسم_العقار'] || p.name || 'بدون اسم';
+                      const city = p['المدينة'] || p.city || '';
+                      const type = p['نوع_العقار'] || p.type || '';
+                      const units = (data.Unit || []).filter(u => u['معرف_العقار'] === p.id || u.property_id === p.id);
+                      const rented = units.filter(u => ['مؤجرة','مشغولة','occupied'].includes(u['حالة_الوحدة'] || u.status || ''));
+                      const occ = units.length ? Math.round((rented.length / units.length) * 100) : 0;
+
+                      return (
+                        <button
+                          key={pid}
+                          onClick={() => { setSelectedId(pid); setDropdownOpen(false); setSearchQuery(''); }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-right hover:bg-sidebar transition-colors border-b border-border/40 last:border-0
+                            ${isSelected ? 'bg-[#C8A951]/8' : ''}`}
+                        >
+                          {/* أيقونة */}
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isSelected ? 'bg-[#C8A951]' : 'bg-sidebar'}`}>
+                            <Building2 size={15} className={isSelected ? 'text-white' : 'text-muted-foreground'} />
+                          </div>
+
+                          {/* المعلومات */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-sm font-semibold truncate ${isSelected ? 'text-[#C8A951]' : 'text-foreground'}`}>{name}</span>
+                              {isSelected && <CheckCircle2 size={13} className="text-[#C8A951] shrink-0" />}
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {city && <span className="text-[10px] text-muted-foreground flex items-center gap-0.5"><MapPin size={9} />{city}</span>}
+                              {type && <span className="text-[10px] text-muted-foreground">· {type}</span>}
+                            </div>
+                          </div>
+
+                          {/* إحصائيات سريعة */}
+                          <div className="text-left shrink-0 space-y-0.5">
+                            <div className="text-[10px] text-muted-foreground">{units.length} وحدة</div>
+                            <div className={`text-[10px] font-bold ${occ >= 80 ? 'text-emerald-400' : occ >= 50 ? 'text-amber-400' : 'text-rose-400'}`}>
+                              {occ}% إشغال
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* تذييل */}
+                <div className="px-4 py-2 border-t border-border bg-sidebar/50 text-[10px] text-muted-foreground">
+                  {filteredProperties.length} عقار متاح
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
