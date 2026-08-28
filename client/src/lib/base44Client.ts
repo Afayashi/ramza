@@ -2,8 +2,15 @@
  * Base44 SDK Client - رمز الإبداع
  * يتصل بقاعدة بيانات Base44 لجلب وإدارة بيانات العقارات
  * يدعم المصادقة التلقائية عبر URL params و localStorage
+ *
+ * الإعداد عبر متغيرات البيئة (للنشر الإنتاجي):
+ *   أضف في ملف .env: VITE_BASE44_APP_ID و VITE_BASE44_API_KEY
  */
 import { createClient } from '@base44/sdk';
+
+// ─── القيم الافتراضية (تُستخدم إن لم تتوفر متغيرات البيئة) ───────
+const DEFAULT_APP_ID = '69cfacf0673abd699cf0f009';
+const DEFAULT_API_KEY = '9a9de3291a4446ecb2a5790330b8792a';
 
 // ─── معلمات التطبيق ─────────────────────────────────────────────
 const isNode = typeof window === 'undefined';
@@ -77,8 +84,11 @@ if (!isNode) {
 }
 
 // ─── معلمات التطبيق ─────────────────────────────────────────────
+const envAppId = !isNode ? import.meta.env.VITE_BASE44_APP_ID : undefined;
+const envApiKey = !isNode ? import.meta.env.VITE_BASE44_API_KEY : undefined;
+
 export const appParams = {
-  appId: getAppParamValue('app_id', { defaultValue: '69cfacf0673abd699cf0f009' }) || '69cfacf0673abd699cf0f009',
+  appId: getAppParamValue('app_id', { defaultValue: envAppId || DEFAULT_APP_ID }) || DEFAULT_APP_ID,
   token: getAppParamValue('access_token', { removeFromUrl: true }),
   fromUrl: !isNode ? (getAppParamValue('from_url', { defaultValue: window.location.href }) || window.location.href) : '',
   functionsVersion: getAppParamValue('functions_version', { defaultValue: '' }) || '',
@@ -94,7 +104,7 @@ export const base44 = createClient({
   requiresAuth: false,
   appBaseUrl: appParams.appBaseUrl,
   headers: {
-    'api_key': '9a9de3291a4446ecb2a5790330b8792a',
+    'api_key': envApiKey || DEFAULT_API_KEY,
   },
 } as any);
 
