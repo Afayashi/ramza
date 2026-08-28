@@ -78,7 +78,7 @@ if (!isNode) {
 
 // ─── معلمات التطبيق ─────────────────────────────────────────────
 export const appParams = {
-  appId: getAppParamValue('app_id', { defaultValue: '69cfacf0673abd699cf0f009' }) || '69cfacf0673abd699cf0f009',
+  appId: getAppParamValue('app_id', { defaultValue: '69e961728a6dd0ec3edd2755' }) || '69e961728a6dd0ec3edd2755',
   token: getAppParamValue('access_token', { removeFromUrl: true }),
   fromUrl: !isNode ? (getAppParamValue('from_url', { defaultValue: window.location.href }) || window.location.href) : '',
   functionsVersion: getAppParamValue('functions_version', { defaultValue: '' }) || '',
@@ -94,7 +94,7 @@ export const base44 = createClient({
   requiresAuth: false,
   appBaseUrl: appParams.appBaseUrl,
   headers: {
-    'api_key': '9a9de3291a4446ecb2a5790330b8792a',
+    'api_key': import.meta.env.VITE_BASE44_API_KEY || '',
   },
 } as any);
 
