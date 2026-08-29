@@ -13,12 +13,21 @@ export interface SMSSettings {
   isConnected: boolean;
 }
 
+const ENV_BEARER = import.meta.env.VITE_TAQNYAT_BEARER || '';
+const ENV_SENDER = import.meta.env.VITE_TAQNYAT_SENDER || 'RAMZ';
+
 export function loadSMSSettings(): SMSSettings {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    return raw ? JSON.parse(raw) : { bearer: '', sender: 'RAMZ', provider: 'taqnyat', isConnected: false };
+    const stored = raw ? JSON.parse(raw) : {};
+    return {
+      bearer: stored.bearer || ENV_BEARER,
+      sender: stored.sender || ENV_SENDER,
+      provider: stored.provider || 'taqnyat',
+      isConnected: stored.isConnected || !!ENV_BEARER,
+    };
   } catch {
-    return { bearer: '', sender: 'RAMZ', provider: 'taqnyat', isConnected: false };
+    return { bearer: ENV_BEARER, sender: ENV_SENDER, provider: 'taqnyat', isConnected: !!ENV_BEARER };
   }
 }
 
