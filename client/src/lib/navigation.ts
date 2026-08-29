@@ -121,6 +121,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'مكتبة الوثائق', path: '/documents' },
       { label: 'منصة التواصل', path: '/communication' },
       { label: 'واتساب', path: '/whatsapp' },
+      { label: 'إرسال SMS', path: '/sms-sender' },
       { label: 'لوحة التنبيهات', path: '/alerts' },
       { label: 'مركز الإشعارات', path: '/notifications' },
       { label: 'الأرشيف', path: '/archive' },

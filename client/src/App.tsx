@@ -104,6 +104,7 @@ import IntegrationWhatsAppSettings from "./pages/IntegrationWhatsAppSettings";
 import IntegrationEmailSettings from "./pages/IntegrationEmailSettings";
 import IntegrationStripeSettings from "./pages/IntegrationStripeSettings";
 import IntegrationSMSSettings from "./pages/IntegrationSMSSettings";
+import SMSSender from "./pages/SMSSender";
 import IntegrationGoogleSettings from "./pages/IntegrationGoogleSettings";
 import IntegrationSlackSettings from "./pages/IntegrationSlackSettings";
 import IntegrationSettings from "./pages/IntegrationSettings";
@@ -204,6 +205,7 @@ function Router() {
       <Route path="/integrations/email" component={IntegrationEmailSettings} />
       <Route path="/integrations/stripe" component={IntegrationStripeSettings} />
       <Route path="/integrations/sms" component={IntegrationSMSSettings} />
+      <Route path="/sms-sender" component={SMSSender} />
       <Route path="/integrations/google" component={IntegrationGoogleSettings} />
       <Route path="/integrations/slack" component={IntegrationSlackSettings} />
 
