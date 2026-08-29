@@ -51,6 +51,7 @@ const defaultData = {
 export default function MaintenanceForm({ maintenance, isOpen, onClose, onSubmit }: MaintenanceFormProps) {
   const [form, setForm] = useState<any>(maintenance ? { ...defaultData, ...maintenance } : { ...defaultData });
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [units, setUnits] = useState<any[]>([]);
   const [properties, setProperties] = useState<any[]>([]);
 
@@ -68,7 +69,7 @@ export default function MaintenanceForm({ maintenance, isOpen, onClose, onSubmit
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try { await onSubmit(form); onClose(); } catch (err) { console.error(err); } finally { setLoading(false); }
+    try { await onSubmit(form); onClose(); } catch (err: any) { setFormError(err?.message || 'حدث خطأ، يرجى المحاولة مرة أخرى'); } finally { setLoading(false); }
   };
 
   const unitOpts = units.map((u: any) => ({ value: u.id, label: `${u.unitNumber || u.id} - ${u.propertyName || ''}` }));
@@ -79,7 +80,7 @@ export default function MaintenanceForm({ maintenance, isOpen, onClose, onSubmit
       title={maintenance ? 'تعديل طلب الصيانة' : 'طلب صيانة جديد'}
       icon={<Wrench size={16} className="text-[#C8A951]" />}
       isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit}
-      loading={loading} submitLabel={maintenance ? 'تحديث' : 'إنشاء'} size="md"
+      loading={loading} error={formError} submitLabel={maintenance ? 'تحديث' : 'إنشاء'} size="md"
     >
       <FormSection title="بيانات الطلب" icon={<Wrench size={14} />}>
         <FormRow>

@@ -39,6 +39,7 @@ const defaultData = {
 export default function TenantForm({ tenant, isOpen, onClose, onSubmit }: TenantFormProps) {
   const [form, setForm] = useState<any>(tenant ? { ...defaultData, ...tenant } : { ...defaultData });
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [units, setUnits] = useState<any[]>([]);
 
   useEffect(() => {
@@ -52,7 +53,7 @@ export default function TenantForm({ tenant, isOpen, onClose, onSubmit }: Tenant
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try { await onSubmit(form); onClose(); } catch (err) { console.error(err); } finally { setLoading(false); }
+    try { await onSubmit(form); onClose(); } catch (err: any) { setFormError(err?.message || 'حدث خطأ، يرجى المحاولة مرة أخرى'); } finally { setLoading(false); }
   };
 
   const unitOptions = units.map((u: any) => ({
@@ -65,7 +66,7 @@ export default function TenantForm({ tenant, isOpen, onClose, onSubmit }: Tenant
       title={tenant ? 'تعديل المستأجر' : 'إضافة مستأجر جديد'}
       icon={<User size={16} className="text-[#C8A951]" />}
       isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit}
-      loading={loading} submitLabel={tenant ? 'تحديث' : 'إضافة'} size="lg"
+      loading={loading} error={formError} submitLabel={tenant ? 'تحديث' : 'إضافة'} size="lg"
     >
       {/* البيانات الشخصية */}
       <FormSection title="البيانات الشخصية" icon={<User size={14} />}>

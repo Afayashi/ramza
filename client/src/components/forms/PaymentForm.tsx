@@ -53,6 +53,7 @@ const defaultData = {
 export default function PaymentForm({ payment, isOpen, onClose, onSubmit }: PaymentFormProps) {
   const [form, setForm] = useState<any>(payment ? { ...defaultData, ...payment } : { ...defaultData });
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [tenants, setTenants] = useState<any[]>([]);
   const [properties, setProperties] = useState<any[]>([]);
 
@@ -80,7 +81,7 @@ export default function PaymentForm({ payment, isOpen, onClose, onSubmit }: Paym
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try { await onSubmit(form); onClose(); } catch (err) { console.error(err); } finally { setLoading(false); }
+    try { await onSubmit(form); onClose(); } catch (err: any) { setFormError(err?.message || 'حدث خطأ، يرجى المحاولة مرة أخرى'); } finally { setLoading(false); }
   };
 
   const tenantOpts = tenants.map((t: any) => ({ value: t.id, label: t.name || t.id }));
@@ -91,7 +92,7 @@ export default function PaymentForm({ payment, isOpen, onClose, onSubmit }: Paym
       title={payment ? 'تعديل الدفعة' : 'تسجيل دفعة جديدة'}
       icon={<DollarSign size={16} className="text-[#C8A951]" />}
       isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit}
-      loading={loading} submitLabel={payment ? 'تحديث' : 'تسجيل'} size="lg"
+      loading={loading} error={formError} submitLabel={payment ? 'تحديث' : 'تسجيل'} size="lg"
     >
       {/* بيانات الدفعة */}
       <FormSection title="بيانات الدفعة" icon={<DollarSign size={14} />}>

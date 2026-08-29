@@ -810,7 +810,7 @@ export default function PropertyOfficialReport() {
             <Section>
               <SectionBody>
                 <SecHeader title="قسم الاعتماد والتوثيق" icon={CheckCircle2} />
-                <div className="grid grid-cols-2 gap-8 print:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 print:grid-cols-2 print:gap-6">
                   {/* معد التقرير */}
                   <div className="space-y-3 print:space-y-2">
                     <p className="text-xs font-black text-gray-700">معد التقرير</p>

@@ -48,6 +48,7 @@ const defaultData = {
 export default function UnitForm({ unit, isOpen, onClose, onSubmit }: UnitFormProps) {
   const [form, setForm] = useState<any>(unit ? { ...defaultData, ...unit } : { ...defaultData });
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [properties, setProperties] = useState<any[]>([]);
 
   useEffect(() => {
@@ -68,7 +69,7 @@ export default function UnitForm({ unit, isOpen, onClose, onSubmit }: UnitFormPr
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try { await onSubmit(form); onClose(); } catch (err) { console.error(err); } finally { setLoading(false); }
+    try { await onSubmit(form); onClose(); } catch (err: any) { setFormError(err?.message || 'حدث خطأ، يرجى المحاولة مرة أخرى'); } finally { setLoading(false); }
   };
 
   const propertyOptions = properties.map((p: any) => ({ value: p.id, label: p.name || `عقار ${p.id}` }));
@@ -78,7 +79,7 @@ export default function UnitForm({ unit, isOpen, onClose, onSubmit }: UnitFormPr
       title={unit ? 'تعديل الوحدة' : 'إضافة وحدة جديدة'}
       icon={<Home size={16} className="text-[#C8A951]" />}
       isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit}
-      loading={loading} submitLabel={unit ? 'تحديث' : 'إضافة'} size="md"
+      loading={loading} error={formError} submitLabel={unit ? 'تحديث' : 'إضافة'} size="md"
     >
       <FormSection title="البيانات الأساسية" icon={<Home size={14} />}>
         <FormRow>

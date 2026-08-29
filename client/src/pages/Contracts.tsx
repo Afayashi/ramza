@@ -216,7 +216,7 @@ export default function Contracts() {
       ) : (
         <div className="space-y-4">
           <EjarDataBanner ejarContracts={ejarContracts} />
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <StatCard title="العقود النشطة" value={active} icon={CheckCircle} />
             <StatCard title="العقود المنتهية" value={expired} icon={AlertTriangle} />
             <StatCard title="إجمالي العقود" value={leases.length} icon={FileText} />

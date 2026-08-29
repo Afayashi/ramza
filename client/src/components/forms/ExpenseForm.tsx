@@ -59,6 +59,7 @@ const defaultData = {
 export default function ExpenseForm({ expense, isOpen, onClose, onSubmit }: ExpenseFormProps) {
   const [form, setForm] = useState<any>(expense ? { ...defaultData, ...expense } : { ...defaultData });
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [properties, setProperties] = useState<any[]>([]);
 
   useEffect(() => {
@@ -72,7 +73,7 @@ export default function ExpenseForm({ expense, isOpen, onClose, onSubmit }: Expe
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try { await onSubmit(form); onClose(); } catch (err) { console.error(err); } finally { setLoading(false); }
+    try { await onSubmit(form); onClose(); } catch (err: any) { setFormError(err?.message || 'حدث خطأ، يرجى المحاولة مرة أخرى'); } finally { setLoading(false); }
   };
 
   const propOpts = properties.map((p: any) => ({ value: p.id, label: p.name || p.id }));
@@ -82,7 +83,7 @@ export default function ExpenseForm({ expense, isOpen, onClose, onSubmit }: Expe
       title={expense ? 'تعديل المصروف' : 'إضافة مصروف جديد'}
       icon={<Receipt size={16} className="text-[#C8A951]" />}
       isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit}
-      loading={loading} submitLabel={expense ? 'تحديث' : 'إضافة'} size="md"
+      loading={loading} error={formError} submitLabel={expense ? 'تحديث' : 'إضافة'} size="md"
     >
       <FormSection title="بيانات المصروف" icon={<Receipt size={14} />}>
         <FormRow>

@@ -48,6 +48,7 @@ const defaultData = {
 export default function ComplaintForm({ complaint, isOpen, onClose, onSubmit }: ComplaintFormProps) {
   const [form, setForm] = useState<any>(complaint ? { ...defaultData, ...complaint } : { ...defaultData });
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [tenants, setTenants] = useState<any[]>([]);
   const [properties, setProperties] = useState<any[]>([]);
 
@@ -65,7 +66,7 @@ export default function ComplaintForm({ complaint, isOpen, onClose, onSubmit }: 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try { await onSubmit(form); onClose(); } catch (err) { console.error(err); } finally { setLoading(false); }
+    try { await onSubmit(form); onClose(); } catch (err: any) { setFormError(err?.message || 'حدث خطأ، يرجى المحاولة مرة أخرى'); } finally { setLoading(false); }
   };
 
   const tenantOpts = tenants.map((t: any) => ({ value: t.id, label: t.name || t.id }));
@@ -76,7 +77,7 @@ export default function ComplaintForm({ complaint, isOpen, onClose, onSubmit }: 
       title={complaint ? 'تعديل الشكوى' : 'تسجيل شكوى جديدة'}
       icon={<MessageSquare size={16} className="text-[#C8A951]" />}
       isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit}
-      loading={loading} submitLabel={complaint ? 'تحديث' : 'تسجيل'} size="md"
+      loading={loading} error={formError} submitLabel={complaint ? 'تحديث' : 'تسجيل'} size="md"
     >
       <FormSection title="بيانات الشكوى" icon={<MessageSquare size={14} />}>
         <FormRow>

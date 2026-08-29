@@ -92,7 +92,7 @@ export default function Maintenance() {
         <LoadingState message="جاري تحميل طلبات الصيانة..." />
       ) : (
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <StatCard title="معلقة" value={pending} icon={Clock} />
             <StatCard title="قيد التنفيذ" value={inProgress} icon={Wrench} />
             <StatCard title="مكتملة" value={completed} icon={CheckCircle} />

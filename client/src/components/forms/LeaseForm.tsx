@@ -45,6 +45,7 @@ const defaultData = {
 export default function LeaseForm({ lease, isOpen, onClose, onSubmit }: LeaseFormProps) {
   const [form, setForm] = useState<any>(lease ? { ...defaultData, ...lease } : { ...defaultData });
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [tenants, setTenants] = useState<any[]>([]);
   const [properties, setProperties] = useState<any[]>([]);
   const [units, setUnits] = useState<any[]>([]);
@@ -74,7 +75,7 @@ export default function LeaseForm({ lease, isOpen, onClose, onSubmit }: LeaseFor
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try { await onSubmit(form); onClose(); } catch (err) { console.error(err); } finally { setLoading(false); }
+    try { await onSubmit(form); onClose(); } catch (err: any) { setFormError(err?.message || 'حدث خطأ، يرجى المحاولة مرة أخرى'); } finally { setLoading(false); }
   };
 
   const tenantOpts = tenants.map((t: any) => ({ value: t.id, label: t.name || t.id }));
@@ -86,7 +87,7 @@ export default function LeaseForm({ lease, isOpen, onClose, onSubmit }: LeaseFor
       title={lease ? 'تعديل العقد' : 'إنشاء عقد جديد'}
       icon={<FileText size={16} className="text-[#C8A951]" />}
       isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit}
-      loading={loading} submitLabel={lease ? 'تحديث' : 'إنشاء'} size="lg"
+      loading={loading} error={formError} submitLabel={lease ? 'تحديث' : 'إنشاء'} size="lg"
     >
       {/* بيانات العقد */}
       <FormSection title="بيانات العقد" icon={<FileText size={14} />}>
