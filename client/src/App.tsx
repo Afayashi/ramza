@@ -5,7 +5,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, Router } from "wouter";
 import { useState } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -111,8 +111,9 @@ import IntegrationGoogleSettings from "./pages/IntegrationGoogleSettings";
 import IntegrationSlackSettings from "./pages/IntegrationSlackSettings";
 import IntegrationSettings from "./pages/IntegrationSettings";
 
-function Router() {
+function AppRouter() {
   return (
+    <Router base="/ramza">
     <Switch>
       {/* الرئيسية */}
       <Route path="/" component={Dashboard} />
@@ -215,6 +216,7 @@ function Router() {
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
+    </Router>
   );
 }
 
@@ -231,7 +233,7 @@ function App() {
         <AuthProvider>
           <TooltipProvider>
             <Toaster />
-            <Router />
+            <AppRouter />
           </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>
