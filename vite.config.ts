@@ -202,7 +202,14 @@ function vitePluginStorageProxy(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy()];
+const isStandaloneBuild = process.env.STANDALONE_BUILD === 'true';
+const plugins = [
+  react(),
+  tailwindcss(),
+  ...(isStandaloneBuild ? [] : [vitePluginManusRuntime()]),
+  vitePluginManusDebugCollector(),
+  vitePluginStorageProxy(),
+];
 
 export default defineConfig({
   plugins,
