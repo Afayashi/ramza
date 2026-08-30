@@ -239,18 +239,18 @@
 
   /* ── KPI / Stat cards ─────────────────────────────────── */
   .stat-card {
-    background: oklch(0.155 0.020 248);
-    border: 1px solid oklch(0.245 0.020 248);
+    background: oklch(1.00 0 0);
+    border: 1px solid oklch(0.88 0.008 248);
     border-radius: var(--radius-xl);
     transition: all 0.25s ease;
   }
   .stat-card:hover {
-    border-color: oklch(0.78 0.12 85 / 0.30);
-    box-shadow: 0 6px 24px oklch(0.78 0.12 85 / 0.08);
+    border-color: oklch(0.72 0.13 85 / 0.40);
+    box-shadow: 0 6px 24px oklch(0.72 0.13 85 / 0.10);
   }
   .stat-card-gold {
-    background: linear-gradient(135deg, oklch(0.155 0.020 248), oklch(0.20 0.030 85 / 0.5));
-    border-color: oklch(0.78 0.12 85 / 0.25);
+    background: linear-gradient(135deg, oklch(1.00 0 0), oklch(0.96 0.015 85));
+    border-color: oklch(0.72 0.13 85 / 0.30);
   }
 
   /* ── Section dividers ─────────────────────────────────── */
@@ -258,46 +258,46 @@
     font-family: 'IBM Plex Sans Arabic', sans-serif;
     font-size: 0.9375rem;
     font-weight: 700;
-    color: oklch(0.94 0.008 85);
+    color: oklch(0.25 0.015 248);
     letter-spacing: -0.01em;
   }
 
   /* ── Maintenance priority indicators ─────────────────── */
   .priority-urgent {
-    color: oklch(0.68 0.22 25);
+    color: oklch(0.50 0.22 25);
     background: oklch(0.68 0.22 25 / 0.12);
   }
   .priority-high {
-    color: oklch(0.78 0.18 35);
+    color: oklch(0.55 0.18 35);
     background: oklch(0.78 0.18 35 / 0.12);
   }
   .priority-medium {
-    color: oklch(0.82 0.14 65);
+    color: oklch(0.55 0.14 65);
     background: oklch(0.82 0.14 65 / 0.12);
   }
   .priority-low {
-    color: oklch(0.72 0.16 168);
+    color: oklch(0.45 0.16 168);
     background: oklch(0.72 0.16 168 / 0.12);
   }
 
   /* ── Table improvements ───────────────────────────────── */
   .data-table thead tr {
-    background: oklch(0.130 0.022 248);
-    border-bottom: 1px solid oklch(0.245 0.020 248);
+    background: oklch(0.95 0.006 248);
+    border-bottom: 1px solid oklch(0.88 0.008 248);
   }
   .data-table tbody tr {
-    border-bottom: 1px solid oklch(0.205 0.018 248);
+    border-bottom: 1px solid oklch(0.92 0.006 248);
     transition: background 0.15s ease;
   }
   .data-table tbody tr:hover {
-    background: oklch(0.78 0.12 85 / 0.04);
+    background: oklch(0.72 0.13 85 / 0.05);
   }
 
   /* ── Input focus ring ─────────────────────────────────── */
   input:focus-visible,
   textarea:focus-visible,
   select:focus-visible {
-    outline: 2px solid oklch(0.78 0.12 85 / 0.6);
+    outline: 2px solid oklch(0.72 0.13 85 / 0.6);
     outline-offset: 2px;
   }
 
@@ -307,14 +307,14 @@
     height: 5px;
   }
   ::-webkit-scrollbar-track {
-    background: oklch(0.115 0.020 248);
+    background: oklch(0.93 0.006 248);
   }
   ::-webkit-scrollbar-thumb {
-    background: oklch(0.28 0.018 248);
+    background: oklch(0.78 0.008 248);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.78 0.12 85 / 0.45);
+    background: oklch(0.72 0.13 85 / 0.55);
   }
 
   /* ── Selection color ──────────────────────────────────── */
