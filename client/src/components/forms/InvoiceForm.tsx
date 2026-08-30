@@ -41,6 +41,7 @@ const defaultData = {
 export default function InvoiceForm({ invoice, isOpen, onClose, onSubmit }: InvoiceFormProps) {
   const [form, setForm] = useState<any>(invoice ? { ...defaultData, ...invoice } : { ...defaultData });
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [tenants, setTenants] = useState<any[]>([]);
   const [properties, setProperties] = useState<any[]>([]);
 
@@ -68,7 +69,7 @@ export default function InvoiceForm({ invoice, isOpen, onClose, onSubmit }: Invo
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try { await onSubmit(form); onClose(); } catch (err) { console.error(err); } finally { setLoading(false); }
+    try { await onSubmit(form); onClose(); } catch (err: any) { setFormError(err?.message || 'حدث خطأ، يرجى المحاولة مرة أخرى'); } finally { setLoading(false); }
   };
 
   const tenantOpts = tenants.map((t: any) => ({ value: t.id, label: t.name || t.id }));
@@ -79,7 +80,7 @@ export default function InvoiceForm({ invoice, isOpen, onClose, onSubmit }: Invo
       title={invoice ? 'تعديل الفاتورة' : 'إنشاء فاتورة جديدة'}
       icon={<FileText size={16} className="text-[#C8A951]" />}
       isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit}
-      loading={loading} submitLabel={invoice ? 'تحديث' : 'إنشاء'} size="md"
+      loading={loading} error={formError} submitLabel={invoice ? 'تحديث' : 'إنشاء'} size="md"
     >
       <FormSection title="بيانات الفاتورة" icon={<FileText size={14} />}>
         <FormRow cols={3}>

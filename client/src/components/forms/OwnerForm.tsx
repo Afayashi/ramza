@@ -30,12 +30,13 @@ const defaultData = {
 export default function OwnerForm({ owner, isOpen, onClose, onSubmit }: OwnerFormProps) {
   const [form, setForm] = useState<any>(owner ? { ...defaultData, ...owner } : { ...defaultData });
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const set = (name: string, value: any) => setForm((p: any) => ({ ...p, [name]: value }));
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try { await onSubmit(form); onClose(); } catch (err) { console.error(err); } finally { setLoading(false); }
+    try { await onSubmit(form); onClose(); } catch (err: any) { setFormError(err?.message || 'حدث خطأ، يرجى المحاولة مرة أخرى'); } finally { setLoading(false); }
   };
 
   return (
@@ -43,7 +44,7 @@ export default function OwnerForm({ owner, isOpen, onClose, onSubmit }: OwnerFor
       title={owner ? 'تعديل المالك' : 'إضافة مالك جديد'}
       icon={<User size={16} className="text-[#C8A951]" />}
       isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit}
-      loading={loading} submitLabel={owner ? 'تحديث' : 'إضافة'} size="md"
+      loading={loading} error={formError} submitLabel={owner ? 'تحديث' : 'إضافة'} size="md"
     >
       <FormSection title="البيانات الشخصية" icon={<User size={14} />}>
         <FormRow>

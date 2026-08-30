@@ -3,7 +3,7 @@
  * Design: Dark + Gold, Arabic RTL, متجاوب مع الجوال
  */
 import { ReactNode, FormEvent } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +17,7 @@ interface FormModalProps {
   loading?: boolean;
   submitLabel?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  error?: string | null;
 }
 
 const sizeMap = {
@@ -28,7 +29,7 @@ const sizeMap = {
 
 export default function FormModal({
   title, icon, isOpen, onClose, onSubmit, children,
-  loading = false, submitLabel = 'حفظ', size = 'md'
+  loading = false, submitLabel = 'حفظ', size = 'md', error
 }: FormModalProps) {
   if (!isOpen) return null;
 
@@ -64,6 +65,12 @@ export default function FormModal({
         {/* Body */}
         <form onSubmit={onSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
+            {error && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                <AlertCircle size={16} className="shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
             {children}
           </div>
 

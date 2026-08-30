@@ -6,9 +6,11 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
+import { useState } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import LoginPage, { isAuthenticated as checkLocalAuth } from "./pages/LoginPage";
 
 // الصفحات الأساسية
 import Dashboard from "./pages/Dashboard";
@@ -104,6 +106,7 @@ import IntegrationWhatsAppSettings from "./pages/IntegrationWhatsAppSettings";
 import IntegrationEmailSettings from "./pages/IntegrationEmailSettings";
 import IntegrationStripeSettings from "./pages/IntegrationStripeSettings";
 import IntegrationSMSSettings from "./pages/IntegrationSMSSettings";
+import SMSSender from "./pages/SMSSender";
 import IntegrationGoogleSettings from "./pages/IntegrationGoogleSettings";
 import IntegrationSlackSettings from "./pages/IntegrationSlackSettings";
 import IntegrationSettings from "./pages/IntegrationSettings";
@@ -204,6 +207,7 @@ function Router() {
       <Route path="/integrations/email" component={IntegrationEmailSettings} />
       <Route path="/integrations/stripe" component={IntegrationStripeSettings} />
       <Route path="/integrations/sms" component={IntegrationSMSSettings} />
+      <Route path="/sms-sender" component={SMSSender} />
       <Route path="/integrations/google" component={IntegrationGoogleSettings} />
       <Route path="/integrations/slack" component={IntegrationSlackSettings} />
 
@@ -215,6 +219,12 @@ function Router() {
 }
 
 function App() {
+  const [authed, setAuthed] = useState(checkLocalAuth);
+
+  if (!authed) {
+    return <LoginPage onSuccess={() => setAuthed(true)} />;
+  }
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">

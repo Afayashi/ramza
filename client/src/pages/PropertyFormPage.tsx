@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/lib/base44Client';
+import { isSupabaseConfigured, supabaseCreate } from '@/lib/supabaseClient';
 import { useLocation } from 'wouter';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import {
@@ -75,16 +76,19 @@ type FormData = Record<string, string | number>;
 
 const EMPTY: FormData = {
   'اسم_العقار': '', 'تاريخ_التقرير': '', 'نوع_العقار': 'سكني', 'حالة_العقار': 'نشط', 'رابط_صورة_العقار': '',
-  'المنطقة': '', 'المدينة': '', 'الحي': '', 'العنوان': '', 'العنوان_الوطني': '', 'إحداثيات_الموقع': '', 'رابط_الموقع_على_الخرائط': '',
+  'الإيجار_الشهري': '', 'رسوم_الإدارة': '', 'وصف_العقار': '',
+  'المنطقة': '', 'المدينة': '', 'الحي': '', 'الشارع': '', 'العنوان': '', 'العنوان_الوطني': '',
+  'الرمز_البريدي': '', 'رقم_المبنى': '', 'الرقم_الإضافي': '', 'العنوان_المختصر': '',
+  'إحداثيات_الموقع': '', 'رابط_الموقع_على_الخرائط': '',
   'رقم_وثيقة_الملكية': '', 'نوع_وثيقة_الملكية': '', 'تاريخ_إصدار_الوثيقة': '', 'جهة_إصدار_الصك': '',
   'رقم_المستند': '', 'رقم_القطعة': '', 'رقم_المخطط': '', 'مساحة_الصك': '',
-  'رقم_التسجيل_العيني': '', 'تاريخ_التسجيل_العيني': '', 'حالة_التسجيل_العيني': '',
+  'رقم_التسجيل_العيني': '', 'المعرف_العقاري': '', 'تاريخ_التسجيل_العيني': '', 'حالة_التسجيل_العيني': '', 'جهة_التسجيل_العيني': '', 'ملاحظات_السجل_العيني': '',
   'نوع_المبنى': '', 'نوع_استخدام_العقار': 'سكني', 'الغرض_من_الاستخدام': '',
   'عدد_الطوابق': '', 'عدد_الوحدات': '', 'عدد_المصاعد': '', 'عدد_المواقف': '',
   'المرافق': '', 'نوع_المفتاح': '', 'عدد_المفاتيح': '',
   'إجمالي_الوحدات': '', 'الوحدات_المحجوزة': '', 'الوحدات_المؤجرة': '', 'الوحدات_المتاحة': '',
   'إجمالي_العقود': '', 'إجمالي_مبلغ_العقود_في_العقار': '', 'إجمالي_رسوم_التوثيق_في_العقار': '', 'إجمالي_رسوم_السعي': '',
-  'اسم_المالك': '', 'هوية_المالك': '', 'جنسية_المالك': '', 'نسبة_الملكية': '', 'مساحة_الملكية': '', 'نوع_المالك': 'فرد',
+  'اسم_المالك': '', 'هوية_المالك': '', 'جنسية_المالك': '', 'نسبة_الملكية': '', 'مساحة_الملكية': '', 'نوع_المالك': 'فرد', 'جوال_المالك': '', 'بريد_المالك': '',
   'اسم_جمعية_اتحاد_الملاك': '', 'رقم_تسجيل_الجمعية': '', 'الرقم_الموحد_للجمعية': '',
   'حالة_الجمعية': '', 'تاريخ_سريان_الجمعية': '', 'تاريخ_انتهاء_الجمعية': '',
   'اسم_رئيس_الجمعية': '', 'جوال_رئيس_الجمعية': '', 'اسم_مدير_العقار': '', 'جوال_مدير_العقار': '',
@@ -133,7 +137,11 @@ export default function PropertyFormPage() {
     if (err) { setError(err); setStep(1); return; }
     setLoading(true); setError(null);
     try {
-      await (base44 as any).entities.Property.create(form);
+      if (isSupabaseConfigured()) {
+        await supabaseCreate('Property', form);
+      } else {
+        await (base44 as any).entities.Property.create(form);
+      }
       setSuccess(true);
       setTimeout(() => { setSuccess(false); setStep(1); setForm({ ...EMPTY }); navigate('/properties'); }, 2500);
     } catch (e: any) {
@@ -236,36 +244,56 @@ export default function PropertyFormPage() {
             <div className="p-6">
               {/* STEP 1 */}
               {step === 1 && (
-                <Grid cols={2}>
-                  <Input label="اسم العقار" required value={String(form['اسم_العقار'])} onChange={set('اسم_العقار')} placeholder="مثال: برج السلام السكني" />
-                  <Input label="تاريخ التقرير" type="date" value={String(form['تاريخ_التقرير'])} onChange={set('تاريخ_التقرير')} />
-                  <Select label="نوع العقار" required options={['سكني','تجاري','مختلط','صناعي']} value={String(form['نوع_العقار'])} onChange={set('نوع_العقار')} />
-                  <Select label="حالة العقار" options={['نشط','غير_نشط','مباع']} value={String(form['حالة_العقار'])} onChange={set('حالة_العقار')} />
-                  <div className="md:col-span-2">
-                    <Input label="رابط الصورة الرئيسية" placeholder="https://..." value={String(form['رابط_صورة_العقار'])} onChange={set('رابط_صورة_العقار')} />
-                  </div>
-                  {form['رابط_صورة_العقار'] && (
+                <div className="space-y-5">
+                  <Grid cols={2}>
+                    <Input label="اسم العقار" required value={String(form['اسم_العقار'])} onChange={set('اسم_العقار')} placeholder="مثال: برج السلام السكني" />
+                    <Input label="تاريخ التقرير" type="date" value={String(form['تاريخ_التقرير'])} onChange={set('تاريخ_التقرير')} />
+                    <Select label="نوع العقار" required options={['سكني','تجاري','مختلط','صناعي']} value={String(form['نوع_العقار'])} onChange={set('نوع_العقار')} />
+                    <Select label="حالة العقار" options={['نشط','غير_نشط','مباع']} value={String(form['حالة_العقار'])} onChange={set('حالة_العقار')} />
+                    <Input label="الإيجار الشهري (ر.س)" type="number" placeholder="0" value={String(form['الإيجار_الشهري'])} onChange={set('الإيجار_الشهري')} />
+                    <Input label="رسوم الإدارة (ر.س)" type="number" placeholder="0" value={String(form['رسوم_الإدارة'])} onChange={set('رسوم_الإدارة')} />
                     <div className="md:col-span-2">
-                      <img src={String(form['رابط_صورة_العقار'])} alt="preview" className="w-full h-40 object-cover rounded-xl border border-gray-200"
-                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      <Input label="رابط الصورة الرئيسية" placeholder="https://..." value={String(form['رابط_صورة_العقار'])} onChange={set('رابط_صورة_العقار')} />
                     </div>
-                  )}
-                </Grid>
+                    {form['رابط_صورة_العقار'] && (
+                      <div className="md:col-span-2">
+                        <img src={String(form['رابط_صورة_العقار'])} alt="preview" className="w-full h-40 object-cover rounded-xl border border-gray-200"
+                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      </div>
+                    )}
+                  </Grid>
+                  <Textarea label="وصف العقار" rows={3} placeholder="وصف مختصر للعقار وأبرز مميزاته..." value={String(form['وصف_العقار'])} onChange={set('وصف_العقار')} />
+                </div>
               )}
 
               {/* STEP 2 */}
               {step === 2 && (
-                <Grid cols={2}>
-                  <Input label="المنطقة" value={String(form['المنطقة'])} onChange={set('المنطقة')} placeholder="الرياض" />
-                  <Input label="المدينة" required value={String(form['المدينة'])} onChange={set('المدينة')} placeholder="الرياض" />
-                  <Input label="الحي" value={String(form['الحي'])} onChange={set('الحي')} placeholder="حي النرجس" />
-                  <Input label="العنوان" required value={String(form['العنوان'])} onChange={set('العنوان')} placeholder="شارع التحلية..." />
-                  <Input label="العنوان الوطني" value={String(form['العنوان_الوطني'])} onChange={set('العنوان_الوطني')} />
-                  <Input label="إحداثيات الموقع" placeholder="24.7136, 46.6753" value={String(form['إحداثيات_الموقع'])} onChange={set('إحداثيات_الموقع')} />
-                  <div className="md:col-span-2">
-                    <Input label="رابط الموقع على الخرائط" placeholder="https://maps.google.com/..." value={String(form['رابط_الموقع_على_الخرائط'])} onChange={set('رابط_الموقع_على_الخرائط')} />
-                  </div>
-                </Grid>
+                <div className="space-y-5">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">العنوان التفصيلي</p>
+                  <Grid cols={2}>
+                    <Input label="المنطقة" value={String(form['المنطقة'])} onChange={set('المنطقة')} placeholder="الرياض" />
+                    <Input label="المدينة" required value={String(form['المدينة'])} onChange={set('المدينة')} placeholder="الرياض" />
+                    <Input label="الحي" value={String(form['الحي'])} onChange={set('الحي')} placeholder="حي النرجس" />
+                    <Input label="الشارع" value={String(form['الشارع'])} onChange={set('الشارع')} placeholder="شارع التحلية" />
+                    <Input label="العنوان" required value={String(form['العنوان'])} onChange={set('العنوان')} placeholder="شارع التحلية، حي النرجس..." />
+                    <Input label="العنوان الوطني" value={String(form['العنوان_الوطني'])} onChange={set('العنوان_الوطني')} />
+                  </Grid>
+                  <div className="border-t border-gray-100" />
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">بيانات الرمز الوطني (WASL)</p>
+                  <Grid cols={2}>
+                    <Input label="رقم المبنى" value={String(form['رقم_المبنى'])} onChange={set('رقم_المبنى')} placeholder="1234" />
+                    <Input label="الرقم الإضافي" value={String(form['الرقم_الإضافي'])} onChange={set('الرقم_الإضافي')} placeholder="5678" />
+                    <Input label="الرمز البريدي" value={String(form['الرمز_البريدي'])} onChange={set('الرمز_البريدي')} placeholder="12345" />
+                    <Input label="العنوان المختصر" value={String(form['العنوان_المختصر'])} onChange={set('العنوان_المختصر')} placeholder="RNAD1234" />
+                  </Grid>
+                  <div className="border-t border-gray-100" />
+                  <Grid cols={2}>
+                    <Input label="إحداثيات الموقع" placeholder="24.7136, 46.6753" value={String(form['إحداثيات_الموقع'])} onChange={set('إحداثيات_الموقع')} />
+                    <div className="md:col-span-1">
+                      <Input label="رابط الموقع على الخرائط" placeholder="https://maps.google.com/..." value={String(form['رابط_الموقع_على_الخرائط'])} onChange={set('رابط_الموقع_على_الخرائط')} />
+                    </div>
+                  </Grid>
+                </div>
               )}
 
               {/* STEP 3 */}
@@ -286,9 +314,14 @@ export default function PropertyFormPage() {
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">السجل العيني</p>
                   <Grid cols={3}>
                     <Input label="رقم التسجيل العيني" value={String(form['رقم_التسجيل_العيني'])} onChange={set('رقم_التسجيل_العيني')} />
+                    <Input label="المعرف العقاري" value={String(form['المعرف_العقاري'])} onChange={set('المعرف_العقاري')} placeholder="REDF-XXXXXXXX" />
                     <Input label="تاريخ التسجيل" type="date" value={String(form['تاريخ_التسجيل_العيني'])} onChange={set('تاريخ_التسجيل_العيني')} />
                     <Input label="حالة التسجيل" value={String(form['حالة_التسجيل_العيني'])} onChange={set('حالة_التسجيل_العيني')} />
+                    <Input label="جهة التسجيل العيني" value={String(form['جهة_التسجيل_العيني'])} onChange={set('جهة_التسجيل_العيني')} placeholder="وزارة العدل" />
                   </Grid>
+                  <div className="mt-3">
+                    <Textarea label="ملاحظات السجل العيني" rows={2} placeholder="أي ملاحظات خاصة بالسجل العيني..." value={String(form['ملاحظات_السجل_العيني'])} onChange={set('ملاحظات_السجل_العيني')} />
+                  </div>
                 </>
               )}
 
@@ -348,9 +381,11 @@ export default function PropertyFormPage() {
                   <Input label="اسم المالك" value={String(form['اسم_المالك'])} onChange={set('اسم_المالك')} />
                   <Input label="هوية المالك" value={String(form['هوية_المالك'])} onChange={set('هوية_المالك')} />
                   <Input label="جنسية المالك" value={String(form['جنسية_المالك'])} onChange={set('جنسية_المالك')} />
+                  <Select label="نوع المالك" options={['فرد','شركة','جهة حكومية','أخرى']} value={String(form['نوع_المالك'])} onChange={set('نوع_المالك')} />
+                  <Input label="رقم جوال المالك" type="tel" placeholder="05XXXXXXXX" value={String(form['جوال_المالك'] || '')} onChange={set('جوال_المالك')} />
+                  <Input label="البريد الإلكتروني" type="email" placeholder="owner@example.com" value={String(form['بريد_المالك'] || '')} onChange={set('بريد_المالك')} />
                   <Input label="نسبة الملكية" placeholder="مثال: 100%" value={String(form['نسبة_الملكية'])} onChange={set('نسبة_الملكية')} />
                   <Input label="مساحة الملكية (م²)" type="number" value={String(form['مساحة_الملكية'])} onChange={set('مساحة_الملكية')} />
-                  <Select label="نوع المالك" options={['فرد','شركة','جهة حكومية','أخرى']} value={String(form['نوع_المالك'])} onChange={set('نوع_المالك')} />
                 </Grid>
               )}
 

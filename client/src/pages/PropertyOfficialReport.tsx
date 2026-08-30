@@ -1,90 +1,106 @@
 /*
- * نموذج تقرير بيانات العقار الرسمي - رمز الإبداع لإدارة الأملاك
- * مهيأ للطباعة الورقية والحفظ بصيغة PDF لمالك العقار
+ * تقرير العقار الشامل - رمز الإبداع لإدارة الأملاك والعقارات
+ * مطابق للهوية البصرية الرسمية للشركة - قابل للطباعة وتصدير PDF
  */
 import { useMemo, useState, useRef, useEffect } from 'react';
 import {
-  Building2, Printer, FileText, MapPin, Users, DollarSign,
-  Wrench, TrendingUp, Home, Shield, CheckCircle2,
-  AlertCircle, Star, ClipboardList, Download, Loader2, BarChart3, Award,
-  Search, ChevronDown, X
+  Building2, Printer, Download, Loader2, MapPin, Users, DollarSign,
+  Wrench, TrendingUp, Home, Shield, CheckCircle2, AlertCircle,
+  Star, ClipboardList, BarChart3, Search, ChevronDown, X, FileText
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import PageHeader from '@/components/shared/PageHeader';
 import { LoadingState } from '@/components/shared/PageStates';
 import { useMultiEntityData } from '@/hooks/useEntityData';
 import { Button } from '@/components/ui/button';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 
+// ─── هوية بصرية ────────────────────────────────
+const GOLD   = '#C8A951';
+const DARK   = '#1a1209';
+const DARK2  = '#2d1f06';
 const LOGO_URL = '/brand/ramz-logo.svg';
 
-// ─────────────────────────────────────────────
-// مكوّن حقل إدخال بسيط للنموذج
-// ─────────────────────────────────────────────
-function Field({ label, value, span2 }: { label: string; value?: string | number; span2?: boolean }) {
+// ─── مكوّن حقل بيانات ───────────────────────────
+function DataRow({ label, value }: { label: string; value?: string | number | null }) {
   return (
-    <div className={span2 ? 'col-span-2' : ''}>
-      <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide mb-1 print:text-[7pt]">{label}</div>
-      <div className="bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 min-h-[30px] text-xs text-slate-800 font-medium print:text-[8pt] print:min-h-[20px] print:rounded print:px-2 print:py-1">
-        {value || <span className="text-slate-300 font-normal">—</span>}
-      </div>
+    <div className="flex justify-between items-start py-2 border-b border-gray-100 last:border-0 print:py-1">
+      <span className="text-xs text-gray-500 shrink-0 min-w-[130px] print:text-[7pt] print:min-w-[100px]">{label}</span>
+      <span className="text-xs font-semibold text-gray-900 text-left print:text-[7pt]">{value || '—'}</span>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────
-// رأس قسم
-// ─────────────────────────────────────────────
-function SectionTitle({ num, title, icon: Icon }: { num: string; title: string; icon?: any }) {
+// ─── رأس قسم بشريط ذهبي ────────────────────────
+function SecHeader({ title, icon: Icon }: { title: string; icon?: any }) {
   return (
-    <div className="flex items-center gap-3 mb-5 print:mb-3">
-      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#C8A951] text-white text-xs font-bold shrink-0 print:w-6 print:h-6 print:rounded print:text-[8pt]">
-        {num}
-      </div>
-      {Icon && (
-        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#C8A951]/10 print:hidden">
-          <Icon size={14} className="text-[#C8A951]" />
-        </div>
-      )}
-      <span className="font-bold text-sm text-slate-900 print:text-[10pt]">{title}</span>
-      <div className="flex-1 h-px bg-gradient-to-l from-[#C8A951]/30 to-transparent" />
+    <div className="flex items-center gap-2 mb-3 print:mb-2">
+      <div className="w-1 h-5 rounded-full print:h-4" style={{ background: GOLD }} />
+      {Icon && <Icon size={14} style={{ color: GOLD }} className="shrink-0 print:hidden" />}
+      <h3 className="font-black text-sm text-gray-900 print:text-[9pt]">{title}</h3>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────
-// شبكة حقول
-// ─────────────────────────────────────────────
-function FieldGrid({ children, cols = 2 }: { children: React.ReactNode; cols?: number }) {
+// ─── بطاقة KPI ──────────────────────────────────
+function KPI({ label, value, sub, highlight }: { label: string; value: string | number; sub?: string; highlight?: boolean }) {
   return (
-    <div className="grid gap-x-4 gap-y-3 print:gap-y-2"
-      style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+    <div className={`rounded-xl p-3 text-center border print:rounded print:p-1.5 ${highlight ? 'border-transparent' : 'border-gray-200 bg-white'}`}
+      style={highlight ? { background: GOLD, borderColor: GOLD } : {}}>
+      <div className="text-xl font-black leading-none print:text-[14pt]"
+        style={{ color: highlight ? 'white' : GOLD }}>{value}</div>
+      {sub && <div className="text-[9px] mt-0.5 print:text-[6pt]" style={{ color: highlight ? 'rgba(255,255,255,0.8)' : '#9ca3af' }}>{sub}</div>}
+      <div className="text-[10px] font-semibold mt-1 print:text-[7pt]"
+        style={{ color: highlight ? 'rgba(255,255,255,0.9)' : '#6b7280' }}>{label}</div>
+    </div>
+  );
+}
+
+// ─── جدول ────────────────────────────────────────
+function ReportTable({ headers, rows, emptyMsg }: {
+  headers: string[];
+  rows: (string | number | null | undefined)[][];
+  emptyMsg?: string;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-xl border border-gray-200 print:rounded print:border-gray-300">
+      <table className="w-full text-xs border-collapse print:text-[7pt]">
+        <thead>
+          <tr style={{ background: DARK }}>
+            {headers.map(h => (
+              <th key={h} className="px-2.5 py-2 text-right font-bold print:px-1.5 print:py-1.5" style={{ color: GOLD }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr><td colSpan={headers.length} className="py-5 text-center text-gray-400 text-xs">{emptyMsg || 'لا توجد بيانات'}</td></tr>
+          ) : rows.map((row, i) => (
+            <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/70'}>
+              {row.map((cell, j) => (
+                <td key={j} className="border-b border-gray-100 px-2.5 py-1.5 print:px-1.5 print:py-1">{cell ?? '—'}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ─── كارت قسم ────────────────────────────────────
+function Section({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none ${className}`}>
       {children}
     </div>
   );
 }
-
-// ─────────────────────────────────────────────
-// مؤشر أداء (KPI)
-// ─────────────────────────────────────────────
-function KPIBox({ label, value, sub, accent }: { label: string; value: string | number; sub?: string; accent?: boolean }) {
-  return (
-    <div className={`rounded-xl p-3.5 text-center border print:p-2 print:rounded ${
-      accent
-        ? 'bg-[#C8A951] border-[#C8A951] text-white'
-        : 'bg-white border-[#C8A951]/25 hover:border-[#C8A951]/50 transition-colors'
-    }`}>
-      <div className={`text-lg font-extrabold leading-none print:text-[13pt] ${accent ? 'text-white' : 'text-[#C8A951]'}`}>{value}</div>
-      {sub && <div className={`text-[10px] mt-0.5 print:text-[7pt] ${accent ? 'text-white/80' : 'text-slate-400'}`}>{sub}</div>}
-      <div className={`text-[10px] mt-1 font-medium print:text-[7pt] ${accent ? 'text-white/90' : 'text-slate-500'}`}>{label}</div>
-    </div>
-  );
+function SectionBody({ children }: { children: React.ReactNode }) {
+  return <div className="p-5 print:p-3">{children}</div>;
 }
 
-// ─────────────────────────────────────────────
-// الصفحة الرئيسية
-// ─────────────────────────────────────────────
+// ════════════════════════════════════════════════
 export default function PropertyOfficialReport() {
   const [, setLocation] = useLocation();
   const printRef = useRef<HTMLDivElement>(null);
@@ -95,334 +111,209 @@ export default function PropertyOfficialReport() {
     { name: 'Owner' }, { name: 'Tenant' }
   ]);
 
-  // بيانات عقود إيجار المستوردة
   const allEjarContracts = useMemo(() => {
-    try {
-      const raw = localStorage.getItem('real_contracts');
-      return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+    try { const r = localStorage.getItem('real_contracts'); return r ? JSON.parse(r) : []; } catch { return []; }
   }, []);
 
-  const [selectedId, setSelectedId] = useState<string>('');
+  const [selectedId, setSelectedId] = useState('');
   const [reportDate] = useState(() => new Date().toLocaleDateString('ar-SA'));
-  const [reportNum] = useState(() => `RPT-${Date.now().toString().slice(-6)}`);
+  const [reportNum] = useState(() => `PRP-${Date.now().toString().slice(-12)}`);
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
   const properties = data.Property || [];
 
-  // إغلاق القائمة عند النقر خارجها
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    const fn = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', fn);
+    return () => document.removeEventListener('mousedown', fn);
   }, []);
 
-  // فلترة العقارات حسب البحث
   const filteredProperties = useMemo(() =>
     properties.filter(p => {
       const name = String(p['اسم_العقار'] || p.name || '').toLowerCase();
       const city = String(p['المدينة'] || p.city || '').toLowerCase();
       const q = searchQuery.toLowerCase();
       return name.includes(q) || city.includes(q);
-    }),
-    [properties, searchQuery]
-  );
+    }), [properties, searchQuery]);
 
-  const requestedPropertyId = useMemo(() => {    const params = new URLSearchParams(window.location.search);
+  const requestedPropertyId = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
     return params.get('propertyId') || params.get('id') || '';
   }, []);
 
   const activePropertyId = useMemo(() => {
-    if (selectedId && properties.some((property) => String(property.id) === selectedId)) {
-      return selectedId;
-    }
-
+    if (selectedId && properties.some(p => String(p.id) === selectedId)) return selectedId;
     if (requestedPropertyId) {
-      const matchedProperty = properties.find((property) => String(property.id) === requestedPropertyId);
-      if (matchedProperty) {
-        return String(matchedProperty.id);
-      }
+      const m = properties.find(p => String(p.id) === requestedPropertyId);
+      if (m) return String(m.id);
     }
-
     return properties[0] ? String(properties[0].id) : '';
   }, [properties, requestedPropertyId, selectedId]);
 
-  // ── حساب بيانات التقرير ──────────────────────
+  // ── حساب التقرير ─────────────────────────────
   const report = useMemo(() => {
     if (!activePropertyId) return null;
     const prop = properties.find(p => String(p.id) === activePropertyId);
     if (!prop) return null;
-
     const id = prop.id;
-    const units = (data.Unit || []).filter(u => u['معرف_العقار'] === id || u.property_id === id);
-    const leases = (data.Lease || []).filter(l => l['معرف_العقار'] === id || l.property_id === id);
-    const payments = (data.Payment || []).filter(p => p['معرف_العقار'] === id || p.property_id === id);
-    const expenses = (data.Expense || []).filter(e => e['معرف_العقار'] === id || e.property_id === id);
-    const maint = (data.Maintenance || []).filter(m => m['معرف_العقار'] === id || m.property_id === id);
-    const owner = (data.Owner || []).find(o => o.id === (prop['معرف_المالك'] || prop.owner_id));
 
-    const rented = units.filter(u => ['مؤجرة', 'مشغولة', 'occupied'].includes(u['حالة_الوحدة'] || u.status || ''));
-    const vacant = units.filter(u => ['شاغرة', 'vacant'].includes(u['حالة_الوحدة'] || u.status || ''));
-    const reserved = units.filter(u => ['محجوزة', 'reserved'].includes(u['حالة_الوحدة'] || u.status || ''));
+    const units     = (data.Unit        || []).filter(u => u['معرف_العقار'] === id || u.property_id === id);
+    const leases    = (data.Lease       || []).filter(l => l['معرف_العقار'] === id || l.property_id === id);
+    const payments  = (data.Payment     || []).filter(p => p['معرف_العقار'] === id || p.property_id === id);
+    const expenses  = (data.Expense     || []).filter(e => e['معرف_العقار'] === id || e.property_id === id);
+    const maint     = (data.Maintenance || []).filter(m => m['معرف_العقار'] === id || m.property_id === id);
+    const owner     = (data.Owner       || []).find(o => o.id === (prop['معرف_المالك'] || prop.owner_id));
+    const owners    = (data.Owner       || []).filter(o => o.id === (prop['معرف_المالك'] || prop.owner_id) || !prop['معرف_المالك']);
 
-    const income = payments
-      .filter(p => ['مدفوع', 'paid'].includes(p['حالة_الدفع'] || p.status || ''))
-      .reduce((s, p) => s + Number(p['مبلغ_الدفعة'] || p.amount || 0), 0);
-    const totalExp = expenses.reduce((s, e) => s + Number(e['المبلغ'] || e.amount || 0), 0);
-    const maintCost = maint.reduce((s, m) => s + Number(m['التكلفة'] || m.cost || 0), 0);
-    const net = income - totalExp - maintCost;
-
+    const rented   = units.filter(u => ['مؤجرة','مشغولة','occupied'].includes(u['حالة_الوحدة'] || u.status || ''));
+    const vacant   = units.filter(u => ['شاغرة','vacant'].includes(u['حالة_الوحدة'] || u.status || ''));
+    const inMaint  = units.filter(u => ['صيانة','maintenance'].includes(u['حالة_الوحدة'] || u.status || ''));
     const occupancy = units.length > 0 ? Math.round((rented.length / units.length) * 100) : 0;
 
-    const activeLeases = leases.filter(l => ['نشط', 'active'].includes(l['حالة_العقد'] || l.status || ''));
-    const expectedIncome = activeLeases.reduce((s, l) => s + Number(l['قيمة_الإيجار'] || l.rent || 0), 0);
-    const collectionRate = expectedIncome > 0 ? Math.min(100, Math.round((income / expectedIncome) * 100)) : 0;
-    const overdueAmount = Math.max(expectedIncome - income, 0);
-    const avgRent = activeLeases.length > 0
-      ? Math.round(activeLeases.reduce((s, l) => s + Number(l['قيمة_الإيجار'] || l.rent || 0), 0) / activeLeases.length)
-      : 0;
-    const totalDocumentationFees = leases.reduce((s, l) => s + Number(l['رسوم_التوثيق'] || l.documentation_fees || 0), 0);
+    const activeLeases = leases.filter(l => ['نشط','active','ساري'].includes(l['حالة_العقد'] || l.status || ''));
+
+    const totalContractValue = activeLeases.reduce((s, l) => s + Number(l['قيمة_الإيجار'] || l.rent || 0), 0);
+    const totalInvoices      = payments.reduce((s, p) => s + Number(p['مبلغ_الدفعة'] || p.amount || 0), 0);
+    const totalCollected     = payments.filter(p => ['مدفوع','paid'].includes(p['حالة_الدفع'] || p.status || '')).reduce((s, p) => s + Number(p['مبلغ_الدفعة'] || p.amount || 0), 0);
+    const totalOverdue       = payments.filter(p => ['متأخر','overdue','unpaid'].includes(p['حالة_الدفع'] || p.status || '')).reduce((s, p) => s + Number(p['مبلغ_الدفعة'] || p.amount || 0), 0);
+    const totalExp           = expenses.reduce((s, e) => s + Number(e['المبلغ'] || e.amount || 0), 0);
+    const totalMaintCost     = maint.reduce((s, m) => s + Number(m['التكلفة'] || m.cost || 0), 0);
+    const totalInsurance     = leases.reduce((s, l) => s + Number(l['مبلغ_التأمين'] || l.deposit || 0), 0);
+    const totalDocFees       = leases.reduce((s, l) => s + Number(l['رسوم_التوثيق'] || l.documentation_fees || 0), 0);
     const totalBrokerageFees = leases.reduce((s, l) => s + Number(l['رسوم_السعي'] || l.brokerage_fees || 0), 0);
-    const avgLeaseMonths = activeLeases.length > 0
-      ? Math.round(
-          activeLeases.reduce((s, l) => {
-            const start = new Date(l['تاريخ_بداية_العقد'] || l.start_date || '');
-            const end = new Date(l['تاريخ_نهاية_العقد'] || l.end_date || '');
-            if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return s;
-            const months = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30)));
-            return s + months;
-          }, 0) / activeLeases.length
-        )
-      : 0;
+
+    const adminRate = Number(prop['رسوم_الإدارة'] || prop.management_fee || 0);
+    const adminFees = adminRate > 0 ? Math.round(totalCollected * adminRate / 100) : 0;
+    const netFlow   = totalCollected - totalExp - totalMaintCost - adminFees;
+
+    const collectionRate = totalInvoices > 0 ? Math.min(100, Math.round((totalCollected / totalInvoices) * 100)) : 0;
+
+    // مؤشر صحة العقار
+    const dataFields = [prop['اسم_العقار']||prop.name, prop['المدينة']||prop.city, prop['العنوان']||prop.address, prop['رقم_الصك']||prop['رقم_وثيقة_الملكية'], owner?.['اسم_المالك']||owner?.name];
+    const completeness = Math.round((dataFields.filter(Boolean).length / dataFields.length) * 100);
+    const healthScore  = Math.min(100, Math.round(occupancy * 0.4 + collectionRate * 0.3 + completeness * 0.3));
+
+    const monthlyRent = prop['الإيجار_الشهري'] || (totalContractValue > 0 ? Math.round(totalContractValue / 12) : 0);
 
     return {
-      prop, owner, units, leases, payments, expenses, maint,
-      rented, vacant, reserved, income, totalExp, maintCost, net,
-      occupancy, collectionRate, overdueAmount, activeLeases, avgRent,
-      totalDocumentationFees, totalBrokerageFees, avgLeaseMonths,
+      prop, owner, owners, units, leases, payments, expenses, maint,
+      rented, vacant, inMaint, activeLeases,
+      occupancy, collectionRate, healthScore, completeness,
+      totalContractValue, totalInvoices, totalCollected, totalOverdue,
+      totalExp, totalMaintCost, totalInsurance, totalDocFees, totalBrokerageFees,
+      adminFees, adminRate, netFlow, monthlyRent,
     };
   }, [activePropertyId, data, properties]);
 
-  // بيانات إيجار المرتبطة بالعقار المحدد
-  const ejarPropertyContracts = useMemo(() => {
+  const ejarContracts = useMemo(() => {
     if (!report?.prop) return allEjarContracts;
-    const propName = String(report.prop['اسم_العقار'] || report.prop.name || '').trim().toLowerCase();
-    if (!propName) return allEjarContracts;
-    return allEjarContracts.filter((c: any) => {
+    const n = String(report.prop['اسم_العقار'] || report.prop.name || '').trim().toLowerCase();
+    if (!n) return allEjarContracts;
+    const filtered = allEjarContracts.filter((c: any) => {
       const cn = String(c['اسم_العقار'] || c.propertyName || c['العقار'] || '').toLowerCase();
-      return cn.includes(propName) || propName.includes(cn);
+      return cn.includes(n) || n.includes(cn);
     });
+    return filtered.length > 0 ? filtered : allEjarContracts;
   }, [allEjarContracts, report]);
 
-  // ── وظيفة الطباعة ─────────────────────────
   const handlePrint = () => window.print();
 
-  // ── تصدير PDF فعلي ───────────────────────
   const handleExportPdf = async () => {
-    if (!printRef.current || !report) {
-      toast.error('اختر عقاراً أولاً قبل تصدير PDF');
-      return;
-    }
-
+    if (!printRef.current || !report) { toast.error('اختر عقاراً أولاً'); return; }
     try {
       setIsExporting(true);
-      const [{ toPng }, { jsPDF }] = await Promise.all([
-        import('html-to-image'),
-        import('jspdf'),
-      ]);
-
-      const element = printRef.current;
-      const exportPromise = toPng(element, {
-        cacheBust: true,
-        pixelRatio: 2,
-        backgroundColor: '#ffffff',
-        fontEmbedCSS: '',
-        style: {
-          background: '#ffffff',
-        },
+      const [{ toPng }, { jsPDF }] = await Promise.all([import('html-to-image'), import('jspdf')]);
+      const imgData = await toPng(printRef.current, { cacheBust: true, pixelRatio: 2, backgroundColor: '#ffffff' });
+      const img = await new Promise<HTMLImageElement>((res, rej) => {
+        const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = imgData;
       });
-
-      const imgData = await Promise.race<string>([
-        exportPromise,
-        new Promise<string>((_, reject) => {
-          setTimeout(() => reject(new Error('انتهت مهلة تصدير PDF')), 30000);
-        }),
-      ]);
-
-      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error('تعذر قراءة صورة التقرير'));
-        img.src = imgData;
-      });
-
       const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth;
-      const imgHeight = (image.height * imgWidth) / image.width;
-
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-        heightLeft -= pageHeight;
+      const pw = pdf.internal.pageSize.getWidth();
+      const ph = pdf.internal.pageSize.getHeight();
+      const ih = (img.height * pw) / img.width;
+      let left = ih; let pos = 0;
+      pdf.addImage(imgData, 'PNG', 0, pos, pw, ih, undefined, 'FAST');
+      left -= ph;
+      while (left > 0) {
+        pos = left - ih; pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, pos, pw, ih, undefined, 'FAST');
+        left -= ph;
       }
-
-      const propertyName = String(report.prop?.['اسم_العقار'] || report.prop?.name || 'property')
-        .replace(/\s+/g, '-')
-        .replace(/[^\w\u0600-\u06FF-]/g, '');
-
-      pdf.save(`report-${propertyName}-${reportNum}.pdf`);
-      toast.success('تم تصدير التقرير بصيغة PDF بنجاح');
-    } catch (error) {
-      console.error('PDF export failed:', error);
-      toast.error('تعذر تصدير PDF، حاول مرة أخرى');
-    } finally {
-      setIsExporting(false);
-    }
+      const name = String(report.prop?.['اسم_العقار'] || report.prop?.name || 'property').replace(/\s+/g, '-').replace(/[^\w؀-ۿ-]/g, '');
+      pdf.save(`${reportNum}-${name}.pdf`);
+      toast.success('تم تصدير التقرير بنجاح');
+    } catch { toast.error('تعذر تصدير PDF'); } finally { setIsExporting(false); }
   };
 
-  if (loading) return <DashboardLayout pageTitle="نموذج تقرير العقار الرسمي"><LoadingState /></DashboardLayout>;
+  if (loading) return <DashboardLayout pageTitle="تقرير العقار الشامل"><LoadingState /></DashboardLayout>;
 
   const prop = report?.prop;
 
   return (
-    <DashboardLayout pageTitle="نموذج تقرير العقار الرسمي">
-      {/* ── شريط الاختيار والأدوات (يُخفى عند الطباعة) ── */}
-      <div className="print:hidden">
-        <PageHeader
-          title="نموذج تقرير بيانات العقار الرسمي"
-          description="نسخة رسمية مهيأة للطباعة الورقية والحفظ بصيغة PDF لمالك العقار"
-        />
+    <DashboardLayout pageTitle="تقرير العقار الشامل">
 
-        {/* اختيار العقار - قائمة بحث */}
+      {/* ── شريط الأدوات (يُخفى عند الطباعة) ── */}
+      <div className="print:hidden mb-5">
+        {/* اختيار العقار */}
         <div className="bg-card border border-border rounded-xl p-4 mb-4">
-          <p className="text-xs text-muted-foreground mb-3 font-medium flex items-center gap-1.5">
-            <Building2 size={12} className="text-[#C8A951]" />
-            اختر العقار لإعداد التقرير الرسمي
+          <p className="text-xs text-muted-foreground mb-2 font-medium flex items-center gap-1.5">
+            <Building2 size={12} style={{ color: GOLD }} /> اختر العقار لإعداد التقرير الشامل
           </p>
-
           <div className="relative" ref={dropdownRef}>
-            {/* حقل البحث */}
             <button
               type="button"
               onClick={() => { setDropdownOpen(v => !v); setTimeout(() => searchRef.current?.focus(), 50); }}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-sidebar hover:border-[#C8A951]/50 transition-all text-right"
             >
-              <Building2 size={15} className="text-[#C8A951] shrink-0" />
+              <Building2 size={15} style={{ color: GOLD }} className="shrink-0" />
               <span className={`flex-1 text-sm truncate ${activePropertyId ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                 {activePropertyId
-                  ? (properties.find(p => String(p.id) === activePropertyId)?.['اسم_العقار']
-                    || properties.find(p => String(p.id) === activePropertyId)?.name
-                    || 'بدون اسم')
+                  ? (properties.find(p => String(p.id) === activePropertyId)?.['اسم_العقار'] || properties.find(p => String(p.id) === activePropertyId)?.name || 'بدون اسم')
                   : 'انقر لاختيار عقار...'}
               </span>
-              {activePropertyId && (
-                <span className="text-[10px] text-[#C8A951] bg-[#C8A951]/10 px-2 py-0.5 rounded-full shrink-0 font-semibold">
-                  {properties.find(p => String(p.id) === activePropertyId)?.['المدينة']
-                    || properties.find(p => String(p.id) === activePropertyId)?.city || ''}
-                </span>
-              )}
               <ChevronDown size={14} className={`text-muted-foreground shrink-0 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* القائمة المنسدلة مع البحث */}
             {dropdownOpen && (
               <div className="absolute top-full mt-2 right-0 left-0 z-50 bg-card border border-border rounded-xl shadow-xl overflow-hidden">
-                {/* حقل البحث */}
                 <div className="p-3 border-b border-border">
                   <div className="flex items-center gap-2 bg-sidebar rounded-lg px-3 py-2">
                     <Search size={13} className="text-muted-foreground shrink-0" />
-                    <input
-                      ref={searchRef}
-                      type="text"
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                      placeholder="ابحث باسم العقار أو المدينة..."
-                      className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
-                      dir="rtl"
-                    />
-                    {searchQuery && (
-                      <button onClick={() => setSearchQuery('')}>
-                        <X size={12} className="text-muted-foreground hover:text-foreground" />
-                      </button>
-                    )}
+                    <input ref={searchRef} type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                      placeholder="ابحث باسم العقار أو المدينة..." className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none" dir="rtl" />
+                    {searchQuery && <button onClick={() => setSearchQuery('')}><X size={12} className="text-muted-foreground" /></button>}
                   </div>
                 </div>
-
-                {/* قائمة العقارات */}
-                <div className="max-h-64 overflow-y-auto">
-                  {filteredProperties.length === 0 ? (
-                    <div className="py-8 text-center text-sm text-muted-foreground">
-                      لا توجد نتائج لـ "{searchQuery}"
-                    </div>
-                  ) : (
-                    filteredProperties.map(p => {
-                      const pid = String(p.id);
-                      const isSelected = pid === activePropertyId;
-                      const name = p['اسم_العقار'] || p.name || 'بدون اسم';
-                      const city = p['المدينة'] || p.city || '';
-                      const type = p['نوع_العقار'] || p.type || '';
-                      const units = (data.Unit || []).filter(u => u['معرف_العقار'] === p.id || u.property_id === p.id);
-                      const rented = units.filter(u => ['مؤجرة','مشغولة','occupied'].includes(u['حالة_الوحدة'] || u.status || ''));
-                      const occ = units.length ? Math.round((rented.length / units.length) * 100) : 0;
-
-                      return (
-                        <button
-                          key={pid}
-                          onClick={() => { setSelectedId(pid); setDropdownOpen(false); setSearchQuery(''); }}
-                          className={`w-full flex items-center gap-3 px-4 py-3 text-right hover:bg-sidebar transition-colors border-b border-border/40 last:border-0
-                            ${isSelected ? 'bg-[#C8A951]/8' : ''}`}
-                        >
-                          {/* أيقونة */}
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isSelected ? 'bg-[#C8A951]' : 'bg-sidebar'}`}>
-                            <Building2 size={15} className={isSelected ? 'text-white' : 'text-muted-foreground'} />
-                          </div>
-
-                          {/* المعلومات */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className={`text-sm font-semibold truncate ${isSelected ? 'text-[#C8A951]' : 'text-foreground'}`}>{name}</span>
-                              {isSelected && <CheckCircle2 size={13} className="text-[#C8A951] shrink-0" />}
-                            </div>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              {city && <span className="text-[10px] text-muted-foreground flex items-center gap-0.5"><MapPin size={9} />{city}</span>}
-                              {type && <span className="text-[10px] text-muted-foreground">· {type}</span>}
-                            </div>
-                          </div>
-
-                          {/* إحصائيات سريعة */}
-                          <div className="text-left shrink-0 space-y-0.5">
-                            <div className="text-[10px] text-muted-foreground">{units.length} وحدة</div>
-                            <div className={`text-[10px] font-bold ${occ >= 80 ? 'text-emerald-400' : occ >= 50 ? 'text-amber-400' : 'text-rose-400'}`}>
-                              {occ}% إشغال
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })
-                  )}
+                <div className="max-h-60 overflow-y-auto">
+                  {filteredProperties.map(p => {
+                    const pid = String(p.id);
+                    const isSelected = pid === activePropertyId;
+                    const units = (data.Unit || []).filter(u => u['معرف_العقار'] === p.id || u.property_id === p.id);
+                    const rented = units.filter(u => ['مؤجرة','مشغولة','occupied'].includes(u['حالة_الوحدة'] || u.status || ''));
+                    const occ = units.length ? Math.round((rented.length / units.length) * 100) : 0;
+                    return (
+                      <button key={pid} onClick={() => { setSelectedId(pid); setDropdownOpen(false); setSearchQuery(''); }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-right hover:bg-sidebar transition-colors border-b border-border/40 last:border-0 ${isSelected ? 'bg-[#C8A951]/8' : ''}`}>
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${isSelected ? 'bg-[#C8A951]' : 'bg-sidebar'}`}>
+                          <Building2 size={13} className={isSelected ? 'text-white' : 'text-muted-foreground'} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold truncate" style={{ color: isSelected ? GOLD : undefined }}>{p['اسم_العقار'] || p.name || 'بدون اسم'}</div>
+                          <div className="text-[10px] text-muted-foreground">{p['المدينة'] || p.city || ''}{p['نوع_العقار'] ? ` · ${p['نوع_العقار']}` : ''}</div>
+                        </div>
+                        <div className="text-[10px] shrink-0">
+                          <div className="text-muted-foreground">{units.length} وحدة</div>
+                          <div className="font-bold" style={{ color: occ >= 80 ? '#059669' : occ >= 50 ? '#d97706' : '#dc2626' }}>{occ}%</div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
-
-                {/* تذييل */}
-                <div className="px-4 py-2 border-t border-border bg-sidebar/50 text-[10px] text-muted-foreground">
-                  {filteredProperties.length} عقار متاح
-                </div>
+                <div className="px-4 py-2 border-t border-border bg-sidebar/50 text-[10px] text-muted-foreground">{filteredProperties.length} عقار متاح</div>
               </div>
             )}
           </div>
@@ -430,29 +321,17 @@ export default function PropertyOfficialReport() {
 
         {/* أزرار الإجراءات */}
         {report && (
-          <div className="flex items-center gap-2 mb-4">
-            <Button onClick={handlePrint} size="sm" className="bg-[#C8A951] text-black hover:bg-[#b8973f] gap-1.5 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={handlePrint} size="sm" className="gap-1.5 text-xs" style={{ background: GOLD, color: '#000' }}>
               <Printer size={13} /> طباعة
             </Button>
-            <Button
-              onClick={handleExportPdf}
-              disabled={isExporting}
-              size="sm"
-              variant="outline"
-              className="gap-1.5 text-xs border-[#C8A951]/50 text-[#C8A951] hover:bg-[#C8A951]/10"
-            >
+            <Button onClick={handleExportPdf} disabled={isExporting} size="sm" variant="outline" className="gap-1.5 text-xs" style={{ borderColor: GOLD + '80', color: GOLD }}>
               {isExporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
               {isExporting ? 'جاري التصدير...' : 'تصدير PDF'}
             </Button>
-            <button
-              onClick={() => setLocation('/property-single-report')}
+            <button onClick={() => setLocation('/property-single-report')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-border text-muted-foreground hover:border-[#C8A951]/40 transition-all">
               <TrendingUp size={11} /> تقرير الأداء
-            </button>
-            <button
-              onClick={() => setLocation('/properties')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-border text-muted-foreground hover:border-[#C8A951]/40 transition-all">
-              <Building2 size={11} /> تعديل وحفظ بيانات العقار
             </button>
           </div>
         )}
@@ -462,686 +341,542 @@ export default function PropertyOfficialReport() {
           محتوى التقرير القابل للطباعة
       ════════════════════════════════════════════ */}
       {!report ? (
-        <div className="print:hidden bg-card border border-dashed border-border rounded-xl p-12 text-center">
-          <Building2 size={40} className="mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">اختر عقاراً لعرض نموذج التقرير الرسمي</p>
+        <div className="print:hidden bg-card border border-dashed border-border rounded-xl p-14 text-center">
+          <Building2 size={42} className="mx-auto text-muted-foreground/25 mb-3" />
+          <p className="text-sm text-muted-foreground">اختر عقاراً لعرض التقرير الشامل</p>
         </div>
       ) : (
-        <div ref={printRef} className="official-report bg-white text-slate-900" dir="rtl">
+        <div ref={printRef} className="official-report bg-white text-gray-900 font-sans" dir="rtl">
 
-          {/* ══ غلاف التقرير ══ */}
-          <div className="official-cover mb-6 print:mb-4 overflow-hidden rounded-2xl shadow-lg border border-[#C8A951]/20 print:rounded-none print:shadow-none">
-            {/* شريط علوي ذهبي */}
-            <div className="bg-gradient-to-l from-[#1a1209] via-[#2d1f06] to-[#1a1209] px-8 py-7 print:px-6 print:py-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[#C8A951]/20 border border-[#C8A951]/30 print:w-10 print:h-10 print:rounded-xl">
-                    <img
-                      src={LOGO_URL}
-                      alt="شعار شركة رمز الإبداع"
-                      className="h-9 w-9 object-contain print:h-7 print:w-7"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                    />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-extrabold text-[#C8A951] leading-tight print:text-[15pt]">رمز الإبداع لإدارة الأملاك</h1>
-                    <p className="text-xs text-[#C8A951]/60 mt-0.5 print:text-[8pt]">Ramz Al-Ibdaa Property Management</p>
-                  </div>
-                </div>
-                <div className="text-left">
-                  <div className="text-[10px] text-[#C8A951]/60 print:text-[7pt]">رقم التقرير</div>
-                  <div className="text-sm font-bold text-[#C8A951] print:text-[9pt]">{reportNum}</div>
-                  <div className="text-[10px] text-[#C8A951]/60 mt-1 print:text-[7pt]">{reportDate}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* عنوان التقرير */}
-            <div className="bg-[#C8A951] px-8 py-4 print:px-6 print:py-3">
-              <div className="flex items-center justify-between">
+          {/* ══ الغلاف ══ */}
+          <div className="mb-6 print:mb-4">
+            {/* شريط الشركة العلوي */}
+            <div className="px-7 py-5 print:px-5 print:py-4" style={{ background: `linear-gradient(to left, ${DARK}, ${DARK2}, ${DARK})` }}>
+              <div className="flex items-start justify-between gap-4">
+                {/* معلومات الشركة */}
                 <div>
-                  <h2 className="text-lg font-extrabold text-white print:text-[14pt]">نموذج تقرير بيانات العقار الرسمي</h2>
-                  <p className="text-xs text-white/80 mt-0.5 print:text-[8pt]">نسخة رسمية مهيأة للطباعة الورقية والحفظ بصيغة PDF</p>
+                  <div className="text-xs font-black tracking-widest mb-2 print:text-[8pt]" style={{ color: GOLD }}>
+                    RAMZ AL-EBDAA PROPERTY MANAGEMENT
+                  </div>
+                  <div className="space-y-0.5 text-[10px] print:text-[7pt]" style={{ color: `${GOLD}99` }}>
+                    <div>www.ramzabdae.com</div>
+                    <div>info@ramzabdae.com</div>
+                    <div>920013517</div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 bg-white/20 rounded-lg px-3 py-1.5 print:hidden">
-                  <Award size={14} className="text-white" />
-                  <span className="text-xs font-bold text-white">وثيقة رسمية معتمدة</span>
+                {/* شعار + اسم */}
+                <div className="flex items-center gap-3">
+                  <div className="text-left">
+                    <div className="text-xl font-black print:text-[16pt]" style={{ color: GOLD }}>شركة رمز الإبداع</div>
+                    <div className="text-xs print:text-[8pt]" style={{ color: `${GOLD}80` }}>لإدارة الأملاك والعقارات</div>
+                  </div>
+                  <div className="w-14 h-14 rounded-xl flex items-center justify-center border print:w-10 print:h-10" style={{ borderColor: `${GOLD}40`, background: `${GOLD}15` }}>
+                    <img src={LOGO_URL} alt="شعار رمز الإبداع" className="h-9 w-9 object-contain print:h-7 print:w-7"
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* معلومات التقرير */}
-            <div className="bg-white px-8 py-5 print:px-6 print:py-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 print:gap-3">
-                {[
-                  { label: 'اسم العقار', value: prop?.['اسم_العقار'] || prop?.name || '—' },
-                  { label: 'اسم مالك العقار', value: report.owner?.['اسم_المالك'] || report.owner?.name || '—' },
-                  { label: 'إعداد التقرير', value: 'مدير النظام' },
-                  { label: 'تاريخ التقرير', value: reportDate },
-                  { label: 'رقم التقرير', value: reportNum },
-                  { label: 'الموقع الإلكتروني', value: 'ramzabdae.com' },
-                ].map(item => (
-                  <div key={item.label} className="group">
-                    <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide mb-1">{item.label}</div>
-                    <div className="text-xs font-semibold text-slate-800 border-b-2 border-[#C8A951]/30 pb-1 group-hover:border-[#C8A951]/60 transition-colors">{item.value}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* تنبيه رسمي */}
-              <div className="mt-5 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-3 print:mt-3 print:p-2 print:rounded">
-                <div className="w-5 h-5 rounded-full bg-[#C8A951] flex items-center justify-center shrink-0 mt-0.5 print:hidden">
-                  <span className="text-white text-[10px] font-bold">!</span>
+            {/* شريط عنوان التقرير */}
+            <div className="px-7 py-4 print:px-5 print:py-3" style={{ background: GOLD }}>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl font-black text-white print:text-[18pt]">تقرير العقار الشامل</h1>
+                  <p className="text-xs text-white/80 mt-0.5 print:text-[8pt]">
+                    تقرير مترابط دون تكرار للعقار {prop?.['اسم_العقار'] || prop?.name || ''}
+                  </p>
                 </div>
-                <p className="text-[10px] text-amber-800 leading-relaxed print:text-[7pt]">
-                  <span className="font-bold text-[#C8A951]">تنبيه رسمي: </span>
-                  تُستكمل البيانات الواردة في هذا النموذج قبل الاعتماد النهائي، وُيستخدم كمستند رسمي للطباعة والأرشفة
-                  وتقديمه إلى مالك العقار ضمن ملفات إدارة الأملاك.
-                </p>
+                <div className="text-left shrink-0 space-y-1">
+                  <div className="flex items-center gap-2 text-white/80">
+                    <span className="text-[10px] font-bold print:text-[7pt]">رقم المستند</span>
+                    <span className="text-xs font-black text-white print:text-[8pt]">{reportNum}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-white/80">
+                    <span className="text-[10px] font-bold print:text-[7pt]">التصنيف</span>
+                    <span className="text-xs font-black text-white print:text-[8pt]">تقرير عقار شامل</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-white/80">
+                    <span className="text-[10px] font-bold print:text-[7pt]">تاريخ الإصدار</span>
+                    <span className="text-xs font-black text-white print:text-[8pt]">{reportDate}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* ══ جسم التقرير ══ */}
-          <div className="space-y-5 print:space-y-3 px-1">
+          <div className="space-y-4 px-1 print:space-y-3">
 
-            {/* القسم 1: البيانات الأساسية للعقار */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none">
-              <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 print:px-3 print:py-2">
-                <SectionTitle num="1" title="البيانات الأساسية للعقار" icon={Building2} />
-              </div>
-              <div className="p-5 print:p-3">
-              <FieldGrid cols={2}>
-                <Field label="اسم العقار" value={prop?.['اسم_العقار'] || prop?.name} />
-                <Field label="نوع العقار" value={prop?.['نوع_العقار'] || prop?.type} />
-                <Field label="رقم العقار الداخلي" value={prop?.id} />
-                <Field label="رقم الوحدة / الأصل" value={prop?.['رقم_الأصل']} />
-                <Field label="رقم الوحدة / الوحدة العقارية" value={prop?.['رقم_الوحدة']} />
-                <Field label="حالة العقار" value={prop?.['حالة_العقار'] || 'نشط'} />
-                <Field label="الغرض من الاستخدام" value={prop?.['الغرض'] || prop?.['نوع_العقار']} />
-                <Field label="تصنيف الجدوى" value={prop?.['تصنيف_الجدوى'] || 'مرتفع'} />
-                <Field label="سنة البناء" value={prop?.['سنة_البناء'] || prop?.year_built} />
-                <Field label="عمر العقار (بالسنوات)" value={prop?.['سنة_البناء'] ? String(new Date().getFullYear() - Number(prop['سنة_البناء'])) : ''} />
-                <Field label="المساحة الإجمالية (م²)" value={prop?.['المساحة'] || prop?.area} />
-                <Field label="المساحة التأجيرية (م²)" value={prop?.['المساحة_التأجيرية']} />
-                <Field label="رقم العداد (كهرباء / ماء)" value={prop?.['رقم_العداد']} />
-                <Field label="رقم لوحة المبنى" value={prop?.['رقم_اللوحة']} />
-                <Field label="رابط الصورة الرئيسية" value={prop?.['رابط_الصورة_الرئيسية']} />
-                <Field label="البرج السكني / المثال المرجعي" value={prop?.['البرج_المرجعي']} />
-                <Field label="وصف مختصر للعقار" value={prop?.['الوصف'] || prop?.description} span2 />
-                <Field label="مميزات العقار الأساسية" value={prop?.['المميزات']} span2 />
-                <Field label="حالة المرافق" value={prop?.['حالة_المرافق']} />
-                <Field label="مستوى التشطيب" value={prop?.['مستوى_التشطيب']} />
-                <Field label="تاريخ بدء الإدارة" value={prop?.['تاريخ_بدء_الإدارة']} />
-                <Field label="رقم الصك / الوثيقة" value={prop?.['رقم_الصك']} />
-              </FieldGrid>
-              </div>
-            </div>
+            {/* ══ الملخص التنفيذي ══ */}
+            <Section>
+              <SectionBody>
+                <SecHeader title="الملخص التنفيذي" icon={FileText} />
+                <p className="text-xs text-gray-600 leading-relaxed print:text-[8pt]">
+                  يعرض هذا التقرير الوضع التشغيلي والمالي للعقار{' '}
+                  <strong className="text-gray-900">{prop?.['اسم_العقار'] || prop?.name || ''}</strong>{' '}
+                  حتى تاريخ الإصدار. حالة المحفظة:{' '}
+                  <strong style={{ color: GOLD }}>
+                    {report.collectionRate >= 80 ? 'مستقرة مالياً' : report.collectionRate >= 50 ? 'تحتاج متابعة مالية' : 'تحتاج تدخل عاجل'}
+                  </strong>
+                  {' '}بنسبة إشغال <strong className="text-gray-900">{report.occupancy}%</strong>{' '}
+                  ونسبة تحصيل <strong className="text-gray-900">{report.collectionRate}%</strong>.{' '}
+                  صافي التدفق المسجل هو{' '}
+                  <strong className="text-gray-900">{report.netFlow.toLocaleString('ar-SA')} ر.س</strong>{' '}
+                  بعد المصروفات ورسوم الإدارة.
+                </p>
+              </SectionBody>
+            </Section>
 
-            {/* القسم 2: بيانات الموقع الجغرافي */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none">
-              <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 print:px-3 print:py-2">
-                <SectionTitle num="2" title="بيانات الموقع الجغرافي" icon={MapPin} />
-              </div>
-              <div className="p-5 print:p-3">
-              <FieldGrid cols={2}>
-                <Field label="المنطقة" value={prop?.['المنطقة']} />
-                <Field label="المدينة" value={prop?.['المدينة'] || prop?.city} />
-                <Field label="الحي" value={prop?.['الحي'] || prop?.neighborhood} />
-                <Field label="الشارع" value={prop?.['الشارع']} />
-                <Field label="العنوان التفصيلي" value={prop?.['العنوان'] || prop?.address} />
-                <Field label="العنوان الوطني" value={prop?.['العنوان_الوطني']} />
-                <Field label="الرمز البريدي" value={prop?.['الرمز_البريدي']} />
-                <Field label="الإحداثيات" value={prop?.['الإحداثيات']} />
-                <Field label="رابط الموقع على الخرائط" value={prop?.['رابط_الخريطة']} />
-                <Field label="ملاحظات الموقع" value={prop?.['ملاحظات_الموقع']} />
-              </FieldGrid>
-              </div>
-            </div>
-
-            {/* القسم 3: بيانات الملكية والتوثيق */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none">
-              <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 print:px-3 print:py-2">
-                <SectionTitle num="3" title="بيانات الملكية والتوثيق" icon={Shield} />
-              </div>
-              <div className="p-5 print:p-3">
-              <FieldGrid cols={2}>
-                <Field label="رقم وثيقة الملكية" value={prop?.['رقم_وثيقة_الملكية']} />
-                <Field label="نوع الوثيقة" value={prop?.['نوع_الوثيقة'] || 'صك'} />
-                <Field label="جهة الإصدار" value={prop?.['جهة_الإصدار'] || 'وزارة العدل'} />
-                <Field label="تاريخ إصدار الوثيقة" value={prop?.['تاريخ_إصدار_الوثيقة']} />
-                <Field label="رقم المستند" value={prop?.['رقم_المستند']} />
-                <Field label="رقم المخطط" value={prop?.['رقم_المخطط']} />
-                <Field label="رقم القطعة" value={prop?.['رقم_القطعة']} />
-                <Field label="مساحة الصك (م²)" value={prop?.['مساحة_الصك']} />
-                <Field label="السجل العيني" value={prop?.['السجل_العيني']} />
-                <Field label="رقم التسجيل العيني" value={prop?.['رقم_التسجيل_العيني']} />
-                <Field label="تاريخ التسجيل" value={prop?.['تاريخ_التسجيل']} />
-                <Field label="حالة التسجيل" value={prop?.['حالة_التسجيل'] || 'مسجل'} />
-                <Field label="رقم الصك" value={prop?.['رقم_الصك']} />
-                <Field label="تاريخ انتهاء الوثيقة" value={prop?.['تاريخ_انتهاء_الوثيقة']} />
-              </FieldGrid>
-              </div>
-            </div>
-
-            {/* القسم 4: مواصفات المبنى */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none">
-              <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 print:px-3 print:py-2">
-                <SectionTitle num="4" title="مواصفات المبنى" icon={Home} />
-              </div>
-              <div className="p-5 print:p-3">
-              <FieldGrid cols={2}>
-                <Field label="عدد الطوابق" value={prop?.['عدد_الطوابق']} />
-                <Field label="عدد الوحدات" value={report.units.length || prop?.['عدد_الوحدات']} />
-                <Field label="عدد المصاعد" value={prop?.['عدد_المصاعد']} />
-                <Field label="عدد المواقف" value={prop?.['عدد_المواقف']} />
-                <Field label="نوع المفتاح" value={prop?.['نوع_المفتاح']} />
-                <Field label="عدد المفاتيح" value={prop?.['عدد_المفاتيح']} />
-                <Field label="الغرض من الاستخدام" value={prop?.['نوع_العقار']} />
-                <Field label="حالة العقار العامة" value={prop?.['حالة_العقار'] || 'ممتازة'} />
-              </FieldGrid>
-              </div>
-            </div>
-
-            {/* القسم 5: الملخص التنفيذي */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none">
-              <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 print:px-3 print:py-2">
-                <SectionTitle num="5" title="الملخص التنفيذي" icon={FileText} />
-              </div>
-              <div className="p-5 print:p-3">
-              <p className="text-xs text-slate-600 leading-relaxed print:text-[8pt]">
-                يقدم هذا التقرير نظرة شاملة عن أداء عقار <strong className="text-slate-900">{prop?.['اسم_العقار'] || 'العقار'}</strong> خلال الفترة المحددة،
-                ويعرض حالة الأصل العقاري من الناحية التشغيلية والاستثمارية والإدارية.
-                تم إعداد البيانات بما يضمن وضوح الصورة لمالك العقار، مع التركيز على نسب الإشغال،
-                كفاءة التحصيل، حالة المرافق، الأعمال المنفذة، وفرص تحسين الدخل وتعظيم العائد على الاستثمار.
-              </p>
-              </div>
-            </div>
-
-            {/* القسم 6: مؤشرات الأداء الرئيسية */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none">
-              <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 print:px-3 print:py-2">
-                <SectionTitle num="6" title="مؤشرات الأداء الرئيسية" icon={BarChart3} />
-              </div>
-              <div className="p-5 print:p-3">
-              <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mb-2 print:grid-cols-5 print:gap-2">
-                <KPIBox label="إجمالي الوحدات" value={report.units.length} />
-                <KPIBox label="الوحدات المؤجرة" value={report.rented.length} accent />
-                <KPIBox label="الوحدات المتاحة" value={report.vacant.length} />
-                <KPIBox label="نسبة الإشغال" value={`${report.occupancy}%`} />
-                <KPIBox label="معدل التحصيل" value={`${report.collectionRate}%`} />
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 print:grid-cols-4 print:gap-2">
-                <KPIBox label="الإيراد السنوي" value={`${report.income.toLocaleString('ar-SA')}`} sub="ريال سعودي" />
-                <KPIBox label="المصروفات" value={`${(report.totalExp + report.maintCost).toLocaleString('ar-SA')}`} sub="ريال سعودي" />
-                <KPIBox label="صافي الدخل" value={`${report.net.toLocaleString('ar-SA')}`} sub="ريال سعودي" accent />
-                <KPIBox label="تصنيف الجدوى" value={report.occupancy >= 80 ? 'مرتفع' : report.occupancy >= 50 ? 'متوسط' : 'منخفض'} />
-              </div>
-              </div>
-            </div>
-
-            {/* القسم 7: تفاصيل الوحدات والعقود */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none">
-              <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 print:px-3 print:py-2">
-                <SectionTitle num="7" title="تفاصيل الوحدات والعقود" icon={ClipboardList} />
-              </div>
-              <div className="p-5 print:p-3">
-              <div className="overflow-x-auto rounded-xl border border-slate-200 print:rounded print:border-slate-300">
-                <table className="w-full text-xs border-collapse print:text-[7pt]">
-                  <thead>
-                    <tr className="bg-[#1a1209]">
-                      {['رقم الوحدة', 'نوع الوحدة', 'الحالة', 'المؤجر / الشاغر', 'القيمة الإيجارية', 'بداية العقد', 'نهاية العقد', 'ملاحظات'].map(h => (
-                        <th key={h} className="px-2.5 py-2 text-right text-[10px] font-bold text-[#C8A951] print:px-1.5 print:py-1.5 first:rounded-tr-xl last:rounded-tl-xl">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.units.length > 0 ? report.units.slice(0, 20).map((unit, i) => {
-                      const lease = report.leases.find(l => l['معرف_الوحدة'] === unit.id || l.unit_id === unit.id);
-                      const tenant = lease ? (data.Tenant || []).find(t => t.id === (lease['معرف_المستأجر'] || lease.tenant_id)) : null;
-                      return (
-                        <tr key={unit.id} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'}>
-                          <td className="border-b border-slate-100 px-2.5 py-1.5 print:px-1.5 print:py-1">{unit['رقم_الوحدة'] || unit.id}</td>
-                          <td className="border-b border-slate-100 px-2.5 py-1.5 print:px-1.5 print:py-1">{unit['نوع_الوحدة'] || '—'}</td>
-                          <td className="border-b border-slate-100 px-2.5 py-1.5 print:px-1.5 print:py-1">
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold print:px-1 ${
-                              ['مؤجرة', 'occupied'].includes(unit['حالة_الوحدة'] || '') ? 'bg-emerald-100 text-emerald-700' :
-                              ['شاغرة', 'vacant'].includes(unit['حالة_الوحدة'] || '') ? 'bg-red-100 text-red-700' :
-                              'bg-amber-100 text-amber-700'
-                            }`}>
-                              {unit['حالة_الوحدة'] || '—'}
-                            </span>
-                          </td>
-                          <td className="border-b border-slate-100 px-2.5 py-1.5 print:px-1.5 print:py-1">{tenant?.['اسم_المستأجر'] || tenant?.name || '—'}</td>
-                          <td className="border-b border-slate-100 px-2.5 py-1.5 font-medium text-[#C8A951] print:px-1.5 print:py-1">{lease ? `${Number(lease['قيمة_الإيجار'] || lease.rent || 0).toLocaleString('ar-SA')} ر.س` : '—'}</td>
-                          <td className="border-b border-slate-100 px-2.5 py-1.5 print:px-1.5 print:py-1">{lease?.['تاريخ_بداية_العقد'] || lease?.start_date || '—'}</td>
-                          <td className="border-b border-slate-100 px-2.5 py-1.5 print:px-1.5 print:py-1">{lease?.['تاريخ_نهاية_العقد'] || lease?.end_date || '—'}</td>
-                          <td className="border-b border-slate-100 px-2.5 py-1.5 text-slate-500 print:px-1.5 print:py-1">{lease?.['ملاحظات'] || '—'}</td>
-                        </tr>
-                      );
-                    }) : (
-                      <tr><td colSpan={8} className="text-center py-6 text-slate-400 text-xs">لا توجد وحدات مسجلة</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* ملخص العقود */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5 print:gap-2 print:mt-3">
-                <Field label="إجمالي مبلغ العقود (ر.س)" value={report.activeLeases.reduce((s, l) => s + Number(l['قيمة_الإيجار'] || l.rent || 0), 0).toLocaleString('ar-SA')} />
-                <Field label="إجمالي عدد العقود" value={report.leases.length} />
-                <Field label="إجمالي رسوم التوثيق (ر.س)" value={report.totalDocumentationFees.toLocaleString('ar-SA')} />
-                <Field label="إجمالي رسوم السعي (ر.س)" value={report.totalBrokerageFees.toLocaleString('ar-SA')} />
-                <Field label="متوسط الإيجار السنوي للوحدة" value={report.avgRent ? `${report.avgRent.toLocaleString('ar-SA')} ر.س` : '—'} />
-                <Field label="متوسط مدة العقد (بالأشهر)" value={report.avgLeaseMonths || '—'} />
-                <Field label="العقود النشطة" value={report.activeLeases.length} />
-              </div>
-
-              {/* بيانات إيجار المستوردة */}
-              {allEjarContracts.length > 0 && (
-                <div className="mt-6 print:mt-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-1 h-4 rounded-full bg-[#C8A951]" />
-                    <span className="font-bold text-sm text-slate-700">بيانات منصة إيجار المستوردة</span>
-                    <span className="text-xs bg-[#C8A951]/15 text-[#92710a] font-bold px-2 py-0.5 rounded-full">
-                      {ejarPropertyContracts.length > 0 ? ejarPropertyContracts.length : allEjarContracts.length} عقد
-                      {ejarPropertyContracts.length > 0 && ejarPropertyContracts.length < allEjarContracts.length ? ' مرتبط بهذا العقار' : ' إجمالي'}
-                    </span>
+            {/* ══ مؤشر صحة العقار ══ */}
+            <Section>
+              <SectionBody>
+                <SecHeader title="مؤشر صحة العقار" icon={TrendingUp} />
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 print:grid-cols-4 print:gap-3">
+                  {/* الدرجة الكبيرة */}
+                  <div className="md:col-span-1 rounded-xl p-5 text-center print:p-3" style={{ background: DARK }}>
+                    <div className="text-5xl font-black print:text-[36pt]" style={{ color: GOLD }}>{report.healthScore}</div>
+                    <div className="text-xs mt-1 print:text-[7pt]" style={{ color: `${GOLD}80` }}>من 100 بناءً على الإشغال والتحصيل واكتمال البيانات</div>
                   </div>
-                  {(() => {
-                    const contracts = ejarPropertyContracts.length > 0 ? ejarPropertyContracts : allEjarContracts;
-                    const activeCount = contracts.filter((c: any) => {
-                      const s = String(c['حالة_العقد'] || c.status || '').toLowerCase();
-                      return s.includes('ساري') || s.includes('نشط') || s.includes('active');
-                    }).length;
-                    const expiredCount = contracts.filter((c: any) => {
-                      const s = String(c['حالة_العقد'] || c.status || '').toLowerCase();
-                      return s.includes('منته') || s.includes('expired');
-                    }).length;
-                    const totalAnnualRent = contracts.reduce((sum: number, c: any) => {
-                      const v = parseFloat(String(c['الإيجار_السنوي'] || c.annualRent || c['قيمة_الإيجار'] || 0).replace(/,/g, ''));
-                      return sum + (isNaN(v) ? 0 : v);
-                    }, 0);
-                    const tenants = contracts.map((c: any) => c['اسم_المستأجر'] || c.tenantName || '').filter(Boolean);
-                    return (
-                      <>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 print:gap-2">
-                          <Field label="إجمالي الإيجار السنوي (ر.س)" value={totalAnnualRent > 0 ? totalAnnualRent.toLocaleString('ar-SA') : '—'} />
-                          <Field label="العقود السارية" value={activeCount} />
-                          <Field label="العقود المنتهية" value={expiredCount} />
-                          <Field label="إجمالي العقود" value={contracts.length} />
-                        </div>
-                        {tenants.length > 0 && (
-                          <div className="mb-4">
-                            <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">المستأجرون</div>
-                            <div className="flex flex-wrap gap-2">
-                              {tenants.slice(0, 8).map((t: string, i: number) => (
-                                <span key={i} className="text-[10px] font-medium bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg print:text-[7pt]">{t}</span>
-                              ))}
-                              {tenants.length > 8 && <span className="text-[10px] text-slate-400">+{tenants.length - 8} آخرين</span>}
-                            </div>
+                  {/* المؤشرات الفرعية */}
+                  <div className="md:col-span-3 grid grid-cols-1 gap-3 print:gap-2">
+                    {/* كفاءة التحصيل */}
+                    <div className="rounded-lg border border-gray-200 p-3 print:p-2">
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-xs text-gray-500 print:text-[7pt]">كفاءة التحصيل</span>
+                        <span className="text-xs font-black print:text-[8pt]" style={{ color: GOLD }}>{report.collectionRate}%</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden print:h-1.5">
+                        <div className="h-full rounded-full" style={{ width: `${report.collectionRate}%`, background: GOLD }} />
+                      </div>
+                    </div>
+                    {/* اكتمال البيانات */}
+                    <div className="rounded-lg border border-gray-200 p-3 print:p-2">
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-xs text-gray-500 print:text-[7pt]">اكتمال البيانات</span>
+                        <span className="text-xs font-black print:text-[8pt]" style={{ color: GOLD }}>{report.completeness}%</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden print:h-1.5">
+                        <div className="h-full rounded-full" style={{ width: `${report.completeness}%`, background: GOLD }} />
+                      </div>
+                    </div>
+                    {/* صافي التدفق */}
+                    <div className="rounded-lg border border-gray-200 p-3 print:p-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500 print:text-[7pt]">صافي التدفق</span>
+                        <div className="text-left">
+                          <div className="text-sm font-black print:text-[9pt]" style={{ color: report.netFlow >= 0 ? '#059669' : '#dc2626' }}>
+                            {report.netFlow.toLocaleString('ar-SA')} ر.س
                           </div>
-                        )}
-                        <div className="overflow-x-auto rounded-xl border border-slate-200 print:rounded print:border-slate-300">
-                          <table className="w-full text-xs border-collapse print:text-[7pt]">
-                            <thead>
-                              <tr className="bg-[#1a1209]">
-                                {['رقم العقد', 'المستأجر', 'الوحدة', 'الإيجار السنوي', 'البداية', 'النهاية', 'الحالة'].map(h => (
-                                  <th key={h} className="px-2.5 py-2 text-right text-[10px] font-bold text-[#C8A951] print:px-1.5 print:py-1.5">{h}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {contracts.slice(0, 10).map((c: any, i: number) => {
-                                const status = String(c['حالة_العقد'] || c.status || '');
-                                const isActive = status.toLowerCase().includes('ساري') || status.toLowerCase().includes('نشط');
-                                const isExpired = status.toLowerCase().includes('منته') || status.toLowerCase().includes('expired');
-                                return (
-                                  <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'}>
-                                    <td className="border-b border-slate-100 px-2.5 py-1.5 font-medium print:px-1.5 print:py-1">{c['رقم_عقد_الإيجار'] || c['رقم_العقد'] || c.contractNumber || `—`}</td>
-                                    <td className="border-b border-slate-100 px-2.5 py-1.5 print:px-1.5 print:py-1">{c['اسم_المستأجر'] || c.tenantName || '—'}</td>
-                                    <td className="border-b border-slate-100 px-2.5 py-1.5 print:px-1.5 print:py-1">{c['رقم_الوحدة'] || c.unitNumber || '—'}</td>
-                                    <td className="border-b border-slate-100 px-2.5 py-1.5 font-semibold text-[#C8A951] print:px-1.5 print:py-1">
-                                      {c['الإيجار_السنوي'] || c.annualRent ? `${Number(String(c['الإيجار_السنوي'] || c.annualRent).replace(/,/g,'')).toLocaleString('ar-SA')} ر.س` : '—'}
-                                    </td>
-                                    <td className="border-b border-slate-100 px-2.5 py-1.5 text-slate-500 print:px-1.5 print:py-1">{c['تاريخ_بداية_العقد'] || c.startDate || '—'}</td>
-                                    <td className="border-b border-slate-100 px-2.5 py-1.5 text-slate-500 print:px-1.5 print:py-1">{c['تاريخ_نهاية_العقد'] || c.endDate || '—'}</td>
-                                    <td className="border-b border-slate-100 px-2.5 py-1.5 print:px-1.5 print:py-1">
-                                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold print:px-1 ${
-                                        isActive ? 'bg-emerald-100 text-emerald-700' :
-                                        isExpired ? 'bg-red-100 text-red-600' :
-                                        'bg-slate-100 text-slate-500'
-                                      }`}>{status || 'غير محدد'}</span>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
+                          <div className="text-[9px] print:text-[6pt]" style={{ color: report.collectionRate >= 50 ? '#d97706' : '#dc2626' }}>
+                            {report.collectionRate >= 80 ? 'وضع مالي سليم' : report.collectionRate >= 50 ? 'تحتاج متابعة مالية' : 'تحتاج تدخل عاجل'}
+                          </div>
                         </div>
-                        {contracts.length > 10 && (
-                          <p className="text-xs text-slate-400 text-center mt-2">يُعرض 10 من أصل {contracts.length} عقد — للتفاصيل الكاملة زر صفحة تحليل عقود إيجار</p>
-                        )}
-                      </>
-                    );
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* KPI Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 print:gap-2 print:mt-3">
+                  <KPI label="إجمالي الوحدات"  value={report.units.length} />
+                  <KPI label="وحدات مؤجرة"     value={report.rented.length} highlight />
+                  <KPI label="عقود نشطة"        value={report.activeLeases.length} />
+                  <KPI label="نسبة الإشغال"     value={`${report.occupancy}%`} />
+                  <KPI label="الإيراد الشهري"   value={`${Number(report.monthlyRent).toLocaleString('ar-SA')}`} sub="ر.س" />
+                  <KPI label="إجمالي المحصل"    value={`${report.totalCollected.toLocaleString('ar-SA')}`} sub="ر.س" highlight />
+                  <KPI label="إجمالي المتأخر"   value={`${report.totalOverdue.toLocaleString('ar-SA')}`} sub="ر.س" />
+                  <KPI label="صيانة مفتوحة"     value={report.maint.filter(m => !['مغلق','مكتمل','closed','completed'].includes(m['الحالة']||m.status||'')).length} />
+                </div>
+              </SectionBody>
+            </Section>
+
+            {/* ══ بيانات العقار ══ */}
+            <Section>
+              <SectionBody>
+                <SecHeader title="بيانات العقار" icon={Building2} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 print:grid-cols-2">
+                  <div>
+                    <DataRow label="اسم العقار"        value={prop?.['اسم_العقار'] || prop?.name} />
+                    <DataRow label="نوع العقار"         value={prop?.['نوع_العقار'] || prop?.type} />
+                    <DataRow label="نوع المبنى"         value={prop?.['نوع_المبنى'] || prop?.['نوع_العقار']} />
+                    <DataRow label="الاستخدام"          value={prop?.['الغرض'] || prop?.['نوع_الاستخدام']} />
+                    <DataRow label="الحالة"             value={prop?.['حالة_العقار']} />
+                  </div>
+                  <div>
+                    <DataRow label="الإيجار الشهري"    value={report.monthlyRent ? `${Number(report.monthlyRent).toLocaleString('ar-SA')} ر.س` : undefined} />
+                    <DataRow label="المرافق"            value={prop?.['المرافق'] || prop?.['حالة_المرافق']} />
+                    <DataRow label="رسوم الإدارة"       value={prop?.['رسوم_الإدارة'] ? `${prop['رسوم_الإدارة']}%` : undefined} />
+                    <DataRow label="سنة البناء"         value={prop?.['سنة_البناء'] || prop?.year_built} />
+                    <DataRow label="المساحة الإجمالية" value={prop?.['المساحة'] ? `${prop['المساحة']} م²` : undefined} />
+                  </div>
+                </div>
+              </SectionBody>
+            </Section>
+
+            {/* ══ الموقع والعنوان ══ */}
+            <Section>
+              <SectionBody>
+                <SecHeader title="الموقع والعنوان" icon={MapPin} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 print:grid-cols-2">
+                  <div>
+                    <DataRow label="العنوان"           value={prop?.['العنوان'] || prop?.address} />
+                    <DataRow label="العنوان الوطني"    value={prop?.['العنوان_الوطني']} />
+                    <DataRow label="المنطقة"           value={prop?.['المنطقة']} />
+                    <DataRow label="المدينة"           value={prop?.['المدينة'] || prop?.city} />
+                    <DataRow label="الحي"              value={prop?.['الحي'] || prop?.neighborhood} />
+                  </div>
+                  <div>
+                    <DataRow label="الشارع"            value={prop?.['الشارع']} />
+                    <DataRow label="الرمز البريدي"     value={prop?.['الرمز_البريدي']} />
+                    <DataRow label="رقم المبنى"        value={prop?.['رقم_المبنى']} />
+                    <DataRow label="الرقم الإضافي"     value={prop?.['الرقم_الإضافي']} />
+                    <DataRow label="العنوان المختصر"   value={prop?.['العنوان_المختصر']} />
+                  </div>
+                </div>
+              </SectionBody>
+            </Section>
+
+            {/* ══ بيانات الصك والملكية ══ */}
+            <Section>
+              <SectionBody>
+                <SecHeader title="بيانات الصك والملكية" icon={Shield} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 print:grid-cols-2">
+                  <div>
+                    <DataRow label="رقم الصك"         value={prop?.['رقم_الصك'] || prop?.['رقم_وثيقة_الملكية']} />
+                    <DataRow label="نوع الوثيقة"       value={prop?.['نوع_الوثيقة'] || 'صك ملكية إلكتروني'} />
+                    <DataRow label="تاريخ الإصدار"     value={prop?.['تاريخ_إصدار_الوثيقة']} />
+                    <DataRow label="جهة الإصدار"       value={prop?.['جهة_الإصدار'] || 'وزارة العدل'} />
+                  </div>
+                  <div>
+                    <DataRow label="رقم القطعة"        value={prop?.['رقم_القطعة']} />
+                    <DataRow label="رقم المخطط"        value={prop?.['رقم_المخطط']} />
+                    <DataRow label="المساحة"            value={prop?.['مساحة_الصك'] || prop?.['المساحة'] ? `${prop?.['مساحة_الصك'] || prop?.['المساحة']} م²` : undefined} />
+                  </div>
+                </div>
+              </SectionBody>
+            </Section>
+
+            {/* ══ ملخص الوحدات ══ */}
+            <Section>
+              <SectionBody>
+                <SecHeader title="ملخص الوحدات" icon={Home} />
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 print:grid-cols-5 print:gap-2">
+                  <KPI label="الوحدات المؤجرة"       value={report.rented.length} highlight />
+                  <KPI label="الوحدات الشاغرة"       value={report.vacant.length} />
+                  <KPI label="تحت الصيانة"           value={report.inMaint.length} />
+                  <KPI label="إجمالي الوحدات"        value={report.units.length} />
+                  <KPI label="نسبة الإشغال"          value={`${report.occupancy}%`} />
+                </div>
+              </SectionBody>
+            </Section>
+
+            {/* ══ الوحدات العقارية ══ */}
+            <Section>
+              <SectionBody>
+                <SecHeader title="الوحدات العقارية" icon={ClipboardList} />
+                <ReportTable
+                  headers={['الوحدة', 'النوع', 'المساحة', 'الغرف', 'التأثيث', 'الحالة', 'المستأجر', 'القيمة السنوية']}
+                  emptyMsg="لا توجد وحدات مسجلة"
+                  rows={report.units.slice(0, 25).map(u => {
+                    const lease = report.leases.find(l => l['معرف_الوحدة'] === u.id || l.unit_id === u.id);
+                    const tenant = lease ? (data.Tenant || []).find(t => t.id === (lease['معرف_المستأجر'] || lease.tenant_id)) : null;
+                    const annualRent = Number(lease?.['قيمة_الإيجار'] || lease?.rent || 0);
+                    return [
+                      u['رقم_الوحدة'] || u.id,
+                      u['نوع_الوحدة'] || '—',
+                      u['المساحة'] ? `${u['المساحة']} م²` : '—',
+                      u['عدد_الغرف'] || u.rooms || '—',
+                      u['التأثيث'] || (u['مؤثثة'] ? 'مؤثثة' : 'غير مؤثثة'),
+                      u['حالة_الوحدة'] || u.status || '—',
+                      tenant?.['اسم_المستأجر'] || tenant?.name || '—',
+                      annualRent > 0 ? `${annualRent.toLocaleString('ar-SA')} ر.س` : '—',
+                    ];
+                  })}
+                />
+              </SectionBody>
+            </Section>
+
+            {/* ══ الأداء المالي والعقود ══ */}
+            <Section>
+              <SectionBody>
+                <SecHeader title="الأداء المالي والعقود" icon={DollarSign} />
+                <p className="text-[10px] text-gray-400 mb-4 print:text-[7pt]">القيم مبنية على السجلات المرتبطة بالعقار</p>
+
+                {/* الملخص المالي */}
+                <div className="mb-4 print:mb-3">
+                  <h4 className="text-xs font-black text-gray-700 mb-2 print:text-[8pt]">الملخص المالي</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 print:grid-cols-2 bg-gray-50 rounded-xl p-4 border border-gray-200 print:p-2 print:rounded">
+                    <div>
+                      <DataRow label="إجمالي قيمة العقود"  value={`${report.totalContractValue.toLocaleString('ar-SA')} ر.س`} />
+                      <DataRow label="إجمالي الفواتير"      value={`${report.totalInvoices.toLocaleString('ar-SA')} ر.س`} />
+                      <DataRow label="إجمالي المحصل"        value={`${report.totalCollected.toLocaleString('ar-SA')} ر.س`} />
+                      <DataRow label="إجمالي المتأخرات"     value={`${report.totalOverdue.toLocaleString('ar-SA')} ر.س`} />
+                      <DataRow label="نسبة التحصيل"         value={`${report.collectionRate}%`} />
+                    </div>
+                    <div>
+                      <DataRow label="مبالغ التأمين"        value={`${report.totalInsurance.toLocaleString('ar-SA')} ر.س`} />
+                      <DataRow label="إجمالي المصروفات"     value={`${report.totalExp.toLocaleString('ar-SA')} ر.س`} />
+                      <DataRow label="رسوم الإدارة"         value={`${report.adminFees.toLocaleString('ar-SA')} ر.س`} />
+                      <DataRow label="رسوم التوثيق"         value={`${report.totalDocFees.toLocaleString('ar-SA')} ر.س`} />
+                      <DataRow label="صافي التدفق"          value={`${report.netFlow.toLocaleString('ar-SA')} ر.س`} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* العقود النشطة */}
+                <div className="mb-4 print:mb-3">
+                  <h4 className="text-xs font-black text-gray-700 mb-2 print:text-[8pt]">العقود النشطة</h4>
+                  <ReportTable
+                    headers={['رقم العقد', 'المستأجر', 'رقم الهوية', 'الوحدة', 'البداية', 'النهاية', 'القيمة', 'رسوم التوثيق', 'التأمين']}
+                    emptyMsg="لا توجد عقود نشطة"
+                    rows={report.activeLeases.slice(0, 10).map(l => {
+                      const tenant = (data.Tenant || []).find(t => t.id === (l['معرف_المستأجر'] || l.tenant_id));
+                      return [
+                        l['رقم_العقد'] || l.id,
+                        tenant?.['اسم_المستأجر'] || tenant?.name || l['اسم_المستأجر'] || '—',
+                        tenant?.['رقم_الهوية'] || tenant?.national_id || '—',
+                        l['رقم_الوحدة'] || l.unit_id || '—',
+                        l['تاريخ_بداية_العقد'] || l.start_date || '—',
+                        l['تاريخ_نهاية_العقد'] || l.end_date || '—',
+                        Number(l['قيمة_الإيجار'] || l.rent || 0) > 0 ? `${Number(l['قيمة_الإيجار']||l.rent||0).toLocaleString('ar-SA')} ر.س` : '—',
+                        Number(l['رسوم_التوثيق'] || l.documentation_fees || 0) > 0 ? `${Number(l['رسوم_التوثيق']||l.documentation_fees||0).toLocaleString('ar-SA')} ر.س` : '٠ ر.س',
+                        Number(l['مبلغ_التأمين'] || l.deposit || 0) > 0 ? `${Number(l['مبلغ_التأمين']||l.deposit||0).toLocaleString('ar-SA')} ر.س` : '٠ ر.س',
+                      ];
+                    })}
+                  />
+                </div>
+
+                {/* الفواتير والدفعات */}
+                <div className="mb-4 print:mb-3">
+                  <h4 className="text-xs font-black text-gray-700 mb-2 print:text-[8pt]">الفواتير والدفعات</h4>
+                  <ReportTable
+                    headers={['رقم الفاتورة', 'المستأجر', 'الوحدة', 'الاستحقاق', 'الإجمالي', 'المدفوع', 'المتبقي', 'الحالة']}
+                    emptyMsg="لا توجد فواتير"
+                    rows={report.payments.slice(0, 15).map(p => {
+                      const total = Number(p['مبلغ_الدفعة'] || p.amount || 0);
+                      const isPaid = ['مدفوع','paid'].includes(p['حالة_الدفع'] || p.status || '');
+                      const paid = isPaid ? total : 0;
+                      const tenant = (data.Tenant || []).find(t => t.id === (p['معرف_المستأجر'] || p.tenant_id));
+                      return [
+                        p['رقم_الفاتورة'] || p.id,
+                        tenant?.['اسم_المستأجر'] || tenant?.name || '—',
+                        p['رقم_الوحدة'] || '—',
+                        p['تاريخ_الاستحقاق'] || p.due_date || '—',
+                        `${total.toLocaleString('ar-SA')} ر.س`,
+                        `${paid.toLocaleString('ar-SA')} ر.س`,
+                        `${(total - paid).toLocaleString('ar-SA')} ر.س`,
+                        p['حالة_الدفع'] || p.status || '—',
+                      ];
+                    })}
+                  />
+                </div>
+
+                {/* ملاك العقار المسجلون */}
+                <div>
+                  <h4 className="text-xs font-black text-gray-700 mb-2 print:text-[8pt]">ملاك العقار المسجلون</h4>
+                  <ReportTable
+                    headers={['#', 'اسم المالك', 'رقم الهوية', 'النوع', 'نسبة الملكية', 'المساحة', 'الجوال']}
+                    emptyMsg="لا توجد بيانات ملاك"
+                    rows={report.owners.length > 0
+                      ? report.owners.map((o, i) => [
+                          i + 1,
+                          o['اسم_المالك'] || o.name || 'مالك',
+                          o['رقم_الهوية'] || o.national_id || '—',
+                          o['نوع_المالك'] || 'فرد',
+                          `${o['نسبة_الملكية'] || 100}%`,
+                          prop?.['المساحة'] ? `${prop['المساحة']} م²` : '—',
+                          o['رقم_الجوال'] || o.phone || '—',
+                        ])
+                      : [[1, report.owner?.['اسم_المالك'] || report.owner?.name || 'مالك', report.owner?.['رقم_الهوية'] || '—', 'فرد', '100%', prop?.['المساحة'] ? `${prop['المساحة']} م²` : '—', report.owner?.['رقم_الجوال'] || report.owner?.phone || '—']]
+                    }
+                  />
+                </div>
+              </SectionBody>
+            </Section>
+
+            {/* ══ الحوكمة والتشغيل ══ */}
+            <Section>
+              <SectionBody>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1 h-5 rounded-full" style={{ background: GOLD }} />
+                    <h3 className="font-black text-sm text-gray-900 print:text-[9pt]">الحوكمة والتشغيل</h3>
+                  </div>
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full border print:text-[7pt]" style={{ borderColor: GOLD + '40', color: GOLD, background: GOLD + '10' }}>
+                    اكتمال البيانات {report.completeness}%
+                  </span>
+                </div>
+
+                {/* جمعية اتحاد الملاك */}
+                <div className="mb-5 print:mb-3">
+                  <SecHeader title="جمعية اتحاد الملاك" icon={Users} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 print:grid-cols-2">
+                    <div>
+                      <DataRow label="اسم الاتحاد"       value={prop?.['اسم_جمعية_الملاك']} />
+                      <DataRow label="رقم التسجيل"       value={prop?.['رقم_جمعية_الملاك']} />
+                      <DataRow label="رئيس الجمعية"      value={prop?.['رئيس_الجمعية']} />
+                      <DataRow label="هاتف الرئيس"       value={prop?.['جوال_رئيس_الجمعية']} />
+                    </div>
+                    <div>
+                      <DataRow label="عدد الأعضاء"       value={prop?.['عدد_أعضاء_الجمعية']} />
+                      <DataRow label="تاريخ التأسيس"      value={prop?.['تاريخ_تأسيس_الجمعية']} />
+                      <DataRow label="انتهاء الدورة"      value={prop?.['تاريخ_انتهاء_دورة_الجمعية']} />
+                      <DataRow label="الحالة"             value={prop?.['حالة_جمعية_الملاك'] || 'لا توجد جمعية مسجلة'} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* السجل العيني */}
+                <div className="mb-5 print:mb-3">
+                  <SecHeader title="السجل العيني" icon={Shield} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 print:grid-cols-2">
+                    <div>
+                      <DataRow label="رقم السجل"         value={prop?.['رقم_التسجيل_العيني']} />
+                      <DataRow label="المعرف العقاري"     value={prop?.['المعرف_العقاري']} />
+                      <DataRow label="تاريخ التسجيل"      value={prop?.['تاريخ_التسجيل']} />
+                      <DataRow label="حالة التسجيل"       value={prop?.['حالة_التسجيل'] || 'مسجل'} />
+                    </div>
+                    <div>
+                      <DataRow label="جهة التسجيل"       value={prop?.['جهة_التسجيل']} />
+                      <DataRow label="رقم القطعة"         value={prop?.['رقم_القطعة']} />
+                      <DataRow label="رقم المخطط"         value={prop?.['رقم_المخطط']} />
+                      <DataRow label="ملاحظات"            value={prop?.['ملاحظات_السجل_العيني']} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* طلبات الصيانة المرتبطة */}
+                <div className="mb-5 print:mb-3">
+                  <SecHeader title="طلبات الصيانة المرتبطة" icon={Wrench} />
+                  <ReportTable
+                    headers={['الطلب', 'الوحدة', 'التصنيف', 'الأولوية', 'الفني', 'التكلفة', 'الحالة']}
+                    emptyMsg="لا توجد بيانات مرتبطة"
+                    rows={report.maint.slice(0, 10).map(m => [
+                      m['رقم_الطلب'] || m.id,
+                      m['رقم_الوحدة'] || m.unit_id || '—',
+                      m['نوع_الصيانة'] || '—',
+                      m['الأولوية'] || m.priority || '—',
+                      m['الفني'] || m.technician || '—',
+                      Number(m['التكلفة'] || m.cost || 0) > 0 ? `${Number(m['التكلفة']||m.cost||0).toLocaleString('ar-SA')} ر.س` : '—',
+                      m['الحالة'] || m.status || '—',
+                    ])}
+                  />
+                </div>
+
+                {/* المصروفات المرتبطة */}
+                <div>
+                  <SecHeader title="المصروفات المرتبطة" icon={DollarSign} />
+                  <ReportTable
+                    headers={['البيان', 'التصنيف', 'التاريخ', 'المبلغ']}
+                    emptyMsg="لا توجد بيانات مرتبطة"
+                    rows={report.expenses.slice(0, 10).map(e => [
+                      e['البيان'] || e['الوصف'] || e.description || '—',
+                      e['نوع_المصروف'] || e.category || '—',
+                      e['التاريخ'] || e.date || e.created_date || '—',
+                      Number(e['المبلغ'] || e.amount || 0) > 0 ? `${Number(e['المبلغ']||e.amount||0).toLocaleString('ar-SA')} ر.س` : '—',
+                    ])}
+                  />
+                </div>
+              </SectionBody>
+            </Section>
+
+            {/* ══ التوصيات والإجراءات المقترحة ══ */}
+            <Section>
+              <SectionBody>
+                <SecHeader title="التوصيات والإجراءات المقترحة" icon={Star} />
+                <div className="space-y-2 print:space-y-1.5">
+                  {(() => {
+                    const recs = [];
+                    if (report.totalOverdue > 0) recs.push(`متابعة متأخرات بقيمة ${report.totalOverdue.toLocaleString('ar-SA')} ر.س وربطها بخطة تحصيل.`);
+                    if (report.vacant.length > 0) recs.push(`تسويق ${report.vacant.length} وحدة شاغرة لرفع نسبة الإشغال من ${report.occupancy}%.`);
+                    if (report.completeness < 100) recs.push('استكمال بيانات العنوان الوطني والملكية لرفع موثوقية التقرير.');
+                    if (report.maint.filter(m => !['مغلق','مكتمل','closed','completed'].includes(m['الحالة']||m.status||'')).length > 0) recs.push('متابعة طلبات الصيانة المفتوحة وإغلاقها في أسرع وقت.');
+                    recs.push('مراجعة أسعار الإيجار وفق السوق الحالي لتعظيم العائد على الاستثمار.');
+                    recs.push('تجديد عقود الصيانة الدورية للمرافق الحيوية مع متابعة الأداء التشغيلي.');
+                    return recs.map((rec, i) => (
+                      <div key={i} className="flex items-start gap-3 rounded-xl p-3 border print:p-2 print:rounded" style={{ borderColor: GOLD + '30', background: GOLD + '08' }}>
+                        <div className="flex items-center justify-center w-5 h-5 rounded-full shrink-0 mt-0.5 print:hidden" style={{ background: GOLD }}>
+                          <span className="text-white text-[9px] font-black">{i + 1}</span>
+                        </div>
+                        <p className="text-xs text-gray-600 leading-relaxed print:text-[7pt]"><strong className="print:hidden">{i + 1}. </strong>{rec}</p>
+                      </div>
+                    ));
                   })()}
                 </div>
-              )}
-              </div>
-            </div>
+              </SectionBody>
+            </Section>
 
-            {/* القسم 8: التقرير المالي والاستثماري */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none">
-              <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 print:px-3 print:py-2">
-                <SectionTitle num="8" title="التقرير المالي والاستثماري" icon={DollarSign} />
-              </div>
-              <div className="p-5 print:p-3">
-
-              {/* مؤشرات مالية */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5 print:grid-cols-3 print:gap-2 print:mb-3">
-                <KPIBox label="إجمالي الدخل المتوقع" value={`${report.income.toLocaleString('ar-SA')}`} sub="ر.س" />
-                <KPIBox label="المبالغ المحصلة" value={`${report.income.toLocaleString('ar-SA')}`} sub="ر.س" accent />
-                <KPIBox label="المستحقات المتأخرة" value={`${report.overdueAmount.toLocaleString('ar-SA')}`} sub="ر.س" />
-                <KPIBox label="القيمة السوقية التقديرية" value={`${(report.income * 15).toLocaleString('ar-SA')}`} sub="ر.س" />
-                <KPIBox label="العائد الإجمالي" value={`${report.occupancy > 0 ? Math.round((report.net / Math.max(report.income * 15, 1)) * 100) : 0}%`} />
-                <KPIBox label="صافي العائد ROI" value={`${report.income > 0 ? Math.round((report.net / Math.max(report.income, 1)) * 100) : 0}%`} accent />
-              </div>
-
-              {/* جدول مالي تفصيلي */}
-              <div className="rounded-xl border border-slate-200 overflow-hidden print:rounded print:border-slate-300">
-              <table className="w-full text-xs border-collapse print:text-[7pt]">
-                <thead>
-                  <tr className="bg-[#1a1209]">
-                    <th className="px-3 py-2 text-right font-bold text-[#C8A951] print:px-2 print:py-1.5">البيان</th>
-                    <th className="px-3 py-2 text-right font-bold text-[#C8A951] print:px-2 print:py-1.5">القيمة</th>
-                    <th className="px-3 py-2 text-right font-bold text-[#C8A951] print:px-2 print:py-1.5">ملاحظات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { label: 'الإيجارات المستحقة للفترة', value: `${report.income.toLocaleString('ar-SA')} ر.س`, note: '' },
-                    { label: 'المحصلات النقدية والتحويلات', value: `${report.income.toLocaleString('ar-SA')} ر.س`, note: 'إجمالي المدفوعات' },
-                    { label: 'المصروفات التشغيلية', value: `${report.totalExp.toLocaleString('ar-SA')} ر.س`, note: '' },
-                    { label: 'تكاليف الصيانة', value: `${report.maintCost.toLocaleString('ar-SA')} ر.س`, note: `${report.maint.length} طلب` },
-                    { label: 'صافي الدخل التشغيلي', value: `${report.net.toLocaleString('ar-SA')} ر.س`, note: report.net >= 0 ? 'ربح' : 'خسارة', highlight: true },
-                    { label: 'التكاليف الرأسمالية المتوقعة', value: '—', note: '' },
-                    { label: 'معدل النمو المتوقع', value: '5%', note: 'تقديري' },
-                    { label: 'صافي التدفق النقدي', value: `${report.net.toLocaleString('ar-SA')} ر.س`, note: '' },
-                  ].map((row: any, i) => (
-                    <tr key={i} className={row.highlight ? 'bg-[#C8A951]/8' : i % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'}>
-                      <td className={`border-b border-slate-100 px-3 py-1.5 print:px-2 print:py-1 ${row.highlight ? 'font-bold text-slate-900' : ''}`}>{row.label}</td>
-                      <td className={`border-b border-slate-100 px-3 py-1.5 font-semibold print:px-2 print:py-1 ${row.highlight ? (report.net >= 0 ? 'text-emerald-600' : 'text-red-500') : 'text-[#C8A951]'}`}>{row.value}</td>
-                      <td className="border-b border-slate-100 px-3 py-1.5 text-slate-400 print:px-2 print:py-1">{row.note}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
-              </div>
-            </div>
-
-            {/* القسم 9: معلومات المالك */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none">
-              <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 print:px-3 print:py-2">
-                <SectionTitle num="9" title="معلومات المالك" icon={Users} />
-              </div>
-              <div className="p-5 print:p-3">
-              <FieldGrid cols={2}>
-                <Field label="اسم المالك" value={report.owner?.['اسم_المالك'] || report.owner?.name} />
-                <Field label="هوية المالك" value={report.owner?.['رقم_الهوية'] || report.owner?.national_id} />
-                <Field label="جنسية المالك" value={report.owner?.['الجنسية'] || 'سعودي'} />
-                <Field label="نسبة الملكية (%)" value={report.owner?.['نسبة_الملكية'] || '100'} />
-                <Field label="نوع المالك" value={report.owner?.['نوع_المالك'] || 'فرد'} />
-                <Field label="رقم الجوال" value={report.owner?.['رقم_الجوال'] || report.owner?.phone} />
-                <Field label="رقم الهاتف" value={report.owner?.['رقم_الهاتف']} />
-                <Field label="البريد الإلكتروني" value={report.owner?.['البريد_الإلكتروني'] || report.owner?.email} />
-              </FieldGrid>
-              </div>
-            </div>
-
-            {/* القسم 10: معلومات جمعية اتحاد الملاك */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none">
-              <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 print:px-3 print:py-2">
-                <SectionTitle num="10" title="معلومات جمعية اتحاد الملاك" icon={Users} />
-              </div>
-              <div className="p-5 print:p-3">
-              <FieldGrid cols={2}>
-                <Field label="اسم الجمعية" value={prop?.['اسم_جمعية_الملاك']} />
-                <Field label="الرقم الموحد" value={prop?.['رقم_جمعية_الملاك']} />
-                <Field label="حالة الجمعية" value={prop?.['حالة_جمعية_الملاك']} />
-                <Field label="تاريخ السريان" value={prop?.['تاريخ_سريان_الجمعية']} />
-                <Field label="تاريخ الانتهاء" value={prop?.['تاريخ_انتهاء_الجمعية']} />
-                <Field label="اسم رئيس الجمعية" value={prop?.['رئيس_الجمعية']} />
-                <Field label="جوال رئيس الجمعية" value={prop?.['جوال_رئيس_الجمعية']} />
-                <Field label="اسم مدير العقار" value={prop?.['مدير_العقار']} />
-                <Field label="جوال مدير العقار" value={prop?.['جوال_مدير_العقار']} />
-                <Field label="مبلغ الاشتراك (ر.س)" value={prop?.['مبلغ_اشتراك_الجمعية']} />
-                <Field label="تاريخ دفع الاشتراك" value={prop?.['تاريخ_دفع_الاشتراك']} />
-                <Field label="إجمالي الرسوم (ر.س)" value={prop?.['إجمالي_رسوم_الجمعية']} />
-                <Field label="عدد المصوتين" value={prop?.['عدد_المصوتين']} />
-                <Field label="غير المصوتين" value={prop?.['غير_المصوتين']} />
-                <Field label="نسبة القبول (%)" value={prop?.['نسبة_قبول_الجمعية']} />
-                <Field label="ملاحظات الجمعية" value={prop?.['ملاحظات_الجمعية']} />
-              </FieldGrid>
-              </div>
-            </div>
-
-            {/* القسم 11: طلبات الصيانة وأعمال التشغيل */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none">
-              <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 print:px-3 print:py-2">
-                <SectionTitle num="11" title="طلبات الصيانة السابقة وأعمال التشغيل" icon={Wrench} />
-              </div>
-              <div className="p-5 print:p-3">
-              <div className="overflow-x-auto rounded-xl border border-slate-200 mb-5 print:rounded print:border-slate-300 print:mb-3">
-                <table className="w-full text-xs border-collapse print:text-[7pt]">
-                  <thead>
-                    <tr className="bg-[#1a1209]">
-                      {['تاريخ الطلب', 'نوع الصيانة', 'وصف الطلب', 'الأولوية', 'الحالة', 'الفني / المقاول', 'التكلفة (ر.س)', 'مدة التنفيذ', 'ملاحظات الصيانة'].map(h => (
-                        <th key={h} className="px-2 py-2 text-right text-[10px] font-bold text-[#C8A951] print:px-1.5 print:py-1.5">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.maint.length > 0 ? report.maint.slice(0, 10).map((m, i) => (
-                      <tr key={m.id} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'}>
-                        <td className="border-b border-slate-100 px-2 py-1.5 print:px-1.5 print:py-1">{m['تاريخ_الطلب'] || m.created_date || '—'}</td>
-                        <td className="border-b border-slate-100 px-2 py-1.5 print:px-1.5 print:py-1">{m['نوع_الصيانة'] || '—'}</td>
-                        <td className="border-b border-slate-100 px-2 py-1.5 print:px-1.5 print:py-1">{m['وصف_الطلب'] || m.description || '—'}</td>
-                        <td className="border-b border-slate-100 px-2 py-1.5 print:px-1.5 print:py-1">{m['الأولوية'] || m.priority || '—'}</td>
-                        <td className="border-b border-slate-100 px-2 py-1.5 print:px-1.5 print:py-1">{m['الحالة'] || m.status || '—'}</td>
-                        <td className="border-b border-slate-100 px-2 py-1.5 print:px-1.5 print:py-1">{m['الفني'] || m.technician || '—'}</td>
-                        <td className="border-b border-slate-100 px-2 py-1.5 font-medium text-[#C8A951] print:px-1.5 print:py-1">{m['التكلفة'] || m.cost || '—'}</td>
-                        <td className="border-b border-slate-100 px-2 py-1.5 print:px-1.5 print:py-1">{m['مدة_التنفيذ'] || '—'}</td>
-                        <td className="border-b border-slate-100 px-2 py-1.5 text-slate-400 print:px-1.5 print:py-1">{m['ملاحظات'] || '—'}</td>
-                      </tr>
-                    )) : (
-                      <tr><td colSpan={9} className="text-center py-6 text-slate-400 text-xs">لا توجد طلبات صيانة مسجلة</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 print:gap-2">
-                <Field label="إجمالي تكاليف الصيانة" value={`${report.maintCost.toLocaleString('ar-SA')} ر.س`} />
-                <Field label="عدد السجلات المدخلة" value={report.maint.length} />
-                <Field label="متوسط تكلفة الطلب" value={report.maint.length > 0 ? `${Math.round(report.maintCost / report.maint.length).toLocaleString('ar-SA')} ر.س` : '—'} />
-                <Field label="حالة ملفات الصيانة" value={report.maint.length > 0 ? 'مكتملة' : 'لا يوجد'} />
-              </div>
-              </div>
-            </div>
-
-            {/* القسم 12: الملاحظات العامة والتقييم الإداري */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none">
-              <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 print:px-3 print:py-2">
-                <SectionTitle num="12" title="الملاحظات العامة والتقييم الإداري" icon={AlertCircle} />
-              </div>
-              <div className="p-5 print:p-3">
-              <div className="space-y-2.5 text-xs print:text-[8pt]">
-                {[
-                  { label: 'المتابعة', value: 'يتم التواصل المستمر مع المستأجرين والمتعهدين لضمان انتظام السداد واستكمال الأعمال.' },
-                  { label: 'الالتزام', value: `مستوى الالتزام العام في العقار ${report.occupancy >= 80 ? 'مرتفع' : 'متوسط'} وفق المؤشرات الحالية.` },
-                  { label: 'التحديات', value: report.vacant.length > 0 ? `وجود ${report.vacant.length} وحدة شاغرة تحتاج تسويقاً` : 'لا توجد تحديات جوهرية حالياً.' },
-                  { label: 'فرص التحسين وزيادة الدخل', value: 'مراجعة أسعار الإيجار وفق السوق الحالي، وتحسين المرافق لرفع قيمة الوحدات.' },
-                  { label: 'المخاطر الاستثمارية', value: 'منخفضة - الإشغال مستقر والتدفق النقدي إيجابي.' },
-                  { label: 'الملاحظات العامة', value: `إجمالي ${report.units.length} وحدة، ${report.rented.length} مؤجرة بنسبة إشغال ${report.occupancy}%` },
-                ].map(item => (
-                  <div key={item.label} className="flex gap-3 bg-slate-50 rounded-xl p-3 border border-slate-100 print:rounded print:p-2">
-                    <span className="font-bold text-[#C8A951] min-w-[130px] shrink-0 print:min-w-[100px]">• {item.label}:</span>
-                    <span className="text-slate-600 leading-relaxed">{item.value}</span>
-                  </div>
-                ))}
-              </div>
-              </div>
-            </div>
-
-            {/* القسم 13: التوصيات المقترحة للمالك */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none">
-              <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 print:px-3 print:py-2">
-                <SectionTitle num="13" title="التوصيات المقترحة للمالك" icon={Star} />
-              </div>
-              <div className="p-5 print:p-3">
-              <ul className="space-y-2.5 text-xs print:text-[8pt]">
-                {[
-                  'تجديد عقود الصيانة الدورية للمرافق الحيوية مع متابعة الأداء التشغيلي بشكل شهري.',
-                  'البدء في تسويق الوحدات الشاغرة أو المحجوزة غير المؤكدة بأسعار تنافسية لرفع نسبة الإشغال.',
-                  'مراجعة فرص تحسين الدخل من خلال إعادة تسعير بعض الوحدات بعد تنفيذ التحسينات المناسبة.',
-                  'تخصيص بند رأسمالي للأعمال التطويرية التي تدعم زيادة القيمة السوقية والعائد الاستثماري.',
-                ].map((rec, i) => (
-                  <li key={i} className="flex items-start gap-3 bg-[#C8A951]/5 rounded-xl p-3 border border-[#C8A951]/15 print:rounded print:p-2">
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-[#C8A951] shrink-0 mt-0.5">
-                      <CheckCircle2 size={11} className="text-white" />
+            {/* ══ قسم الاعتماد والتوقيع ══ */}
+            <Section>
+              <SectionBody>
+                <SecHeader title="قسم الاعتماد والتوثيق" icon={CheckCircle2} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 print:grid-cols-2 print:gap-6">
+                  {/* معد التقرير */}
+                  <div className="space-y-3 print:space-y-2">
+                    <p className="text-xs font-black text-gray-700">معد التقرير</p>
+                    <div><div className="text-[9px] text-gray-400 mb-1 uppercase tracking-wide print:text-[6pt]">الاسم</div><div className="h-8 bg-gray-50 border border-gray-200 rounded-lg print:h-5" /></div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div><div className="text-[9px] text-gray-400 mb-1 uppercase tracking-wide print:text-[6pt]">رقم الهاتف</div><div className="h-8 bg-gray-50 border border-gray-200 rounded-lg print:h-5" /></div>
+                      <div><div className="text-[9px] text-gray-400 mb-1 uppercase tracking-wide print:text-[6pt]">البريد الإلكتروني</div><div className="h-8 bg-gray-50 border border-gray-200 rounded-lg print:h-5" /></div>
                     </div>
-                    <span className="text-slate-600 leading-relaxed">{rec}</span>
-                  </li>
-                ))}
-              </ul>
-              </div>
-            </div>
-
-            {/* القسم 14: ملخص البيانات النهائية */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none">
-              <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 print:px-3 print:py-2">
-                <SectionTitle num="14" title="ملخص البيانات النهائية" icon={CheckCircle2} />
-              </div>
-              <div className="p-5 print:p-3">
-              <FieldGrid cols={2}>
-                <Field label="اسم العقار" value={prop?.['اسم_العقار'] || prop?.name} />
-                <Field label="اسم المالك" value={report.owner?.['اسم_المالك'] || report.owner?.name} />
-                <Field label="إجمالي الوحدات" value={report.units.length} />
-                <Field label="نسبة الإشغال" value={`${report.occupancy}%`} />
-                <Field label="الإيراد السنوي المتوقع" value={`${report.income.toLocaleString('ar-SA')} ر.س`} />
-                <Field label="صافي الدخل التشغيلي" value={`${report.net.toLocaleString('ar-SA')} ر.س`} />
-                <Field label="القيمة السوقية التقديرية" value={`${(report.income * 15).toLocaleString('ar-SA')} ر.س`} />
-                <Field label="صافي العائد على الاستثمار ROI" value={`${report.income > 0 ? Math.round((report.net / Math.max(report.income, 1)) * 100) : 0}%`} />
-                <Field label="حالة العقار" value={prop?.['حالة_العقار'] || 'ممتازة'} />
-                <Field label="قرار الإدارة / التوصية النهائية" value={report.occupancy >= 80 ? 'الاستمرار في الإدارة مع التحسين' : 'تكثيف التسويق ورفع نسبة الإشغال'} />
-              </FieldGrid>
-              </div>
-            </div>
-
-            {/* القسم 15: قسم الاعتماد والتوثيق */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none">
-              <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 print:px-3 print:py-2">
-                <SectionTitle num="15" title="قسم الاعتماد والتوثيق" icon={Shield} />
-              </div>
-              <div className="p-5 print:p-3">
-              <div className="grid grid-cols-2 gap-8 print:gap-6">
-                {/* معد التقرير */}
-                <div className="space-y-4 print:space-y-3">
-                  <p className="text-xs font-bold text-slate-700 mb-3">معد التقرير</p>
-                  <div>
-                    <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide mb-1">الاسم</div>
-                    <div className="bg-slate-50 border border-slate-200 rounded-md h-8 print:h-6" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide mb-1">رقم الهاتف</div>
-                      <div className="bg-slate-50 border border-slate-200 rounded-md h-8 print:h-6" />
-                    </div>
-                    <div>
-                      <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide mb-1">البريد الإلكتروني</div>
-                      <div className="bg-slate-50 border border-slate-200 rounded-md h-8 print:h-6" />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide mb-1">التوقيع</div>
-                    <div className="bg-slate-50 border border-dashed border-slate-300 rounded-xl h-20 print:h-14 flex items-center justify-center">
-                      <span className="text-[10px] text-slate-300">التوقيع هنا</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* المسؤول المعتمد */}
-                <div className="space-y-4 print:space-y-3">
-                  <p className="text-xs font-bold text-slate-700 mb-3">المسؤول المعتمد</p>
-                  <div>
-                    <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide mb-1">الاسم</div>
-                    <div className="bg-slate-50 border border-slate-200 rounded-md h-8 print:h-6" />
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1">
-                      <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide mb-1">الختم الرسمي</div>
-                      <div className="border-2 border-dashed border-[#C8A951]/40 rounded-full w-20 h-20 print:w-14 print:h-14 flex items-center justify-center">
-                        <span className="text-[9px] text-[#C8A951]/40 font-medium">ختم</span>
+                    <div><div className="text-[9px] text-gray-400 mb-1 uppercase tracking-wide print:text-[6pt]">التوقيع</div>
+                      <div className="h-20 bg-gray-50 border border-dashed border-gray-300 rounded-xl flex items-center justify-center print:h-12 print:rounded">
+                        <span className="text-[10px] text-gray-300 print:text-[7pt]">التوقيع هنا</span>
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide mb-1">التوقيع</div>
-                      <div className="bg-slate-50 border border-dashed border-slate-300 rounded-xl h-20 print:h-14 flex items-center justify-center">
-                        <span className="text-[10px] text-slate-300">التوقيع هنا</span>
+                  </div>
+                  {/* المسؤول المعتمد */}
+                  <div className="space-y-3 print:space-y-2">
+                    <p className="text-xs font-black text-gray-700">المسؤول المعتمد</p>
+                    <div><div className="text-[9px] text-gray-400 mb-1 uppercase tracking-wide print:text-[6pt]">الاسم</div><div className="h-8 bg-gray-50 border border-gray-200 rounded-lg print:h-5" /></div>
+                    <div className="flex items-center gap-4 mt-2">
+                      <div>
+                        <div className="text-[9px] text-gray-400 mb-1 uppercase tracking-wide print:text-[6pt]">الختم الرسمي</div>
+                        <div className="w-20 h-20 rounded-full border-2 border-dashed flex items-center justify-center print:w-14 print:h-14" style={{ borderColor: GOLD + '50' }}>
+                          <span className="text-[9px] font-medium print:text-[6pt]" style={{ color: GOLD + '50' }}>ختم</span>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-[9px] text-gray-400 mb-1 uppercase tracking-wide print:text-[6pt]">التوقيع</div>
+                        <div className="h-20 bg-gray-50 border border-dashed border-gray-300 rounded-xl flex items-center justify-center print:h-12 print:rounded">
+                          <span className="text-[10px] text-gray-300 print:text-[7pt]">التوقيع هنا</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* تذييل التقرير */}
-              <div className="mt-6 pt-4 border-t border-[#C8A951]/20 print:mt-4 print:pt-3">
-                <div className="bg-gradient-to-l from-[#1a1209] via-[#2d1f06] to-[#1a1209] rounded-xl p-3 text-center print:rounded print:p-2">
-                  <p className="text-[10px] text-[#C8A951]/80 print:text-[7pt]">
-                    شركة رمز الإبداع لإدارة الأملاك &nbsp;|&nbsp; www.ramzabdae.com &nbsp;|&nbsp; نموذج رسمي للطباعة والأرشفة &nbsp;|&nbsp; سري وخاص بمالك العقار والجهات المعنية فقط
+                {/* إخلاء مسؤولية */}
+                <div className="mt-5 pt-4 border-t border-gray-100 print:mt-3 print:pt-2">
+                  <p className="text-[9px] text-gray-400 text-center leading-relaxed print:text-[6pt]">
+                    صدر هذا المستند إلكترونياً من نظام شركة رمز الإبداع لإدارة الأملاك، وتُراجع بياناته وفق السجلات المعتمدة في النظام.
                   </p>
                 </div>
-              </div>
-              </div>
+              </SectionBody>
+            </Section>
+
+          </div>
+
+          {/* ══ تذييل التقرير ══ */}
+          <div className="mt-6 px-1 print:mt-4">
+            <div className="rounded-xl px-6 py-3 flex items-center justify-between print:rounded print:px-4 print:py-2" style={{ background: DARK }}>
+              <span className="text-[10px] font-bold print:text-[7pt]" style={{ color: GOLD + '80' }}>
+                الموقع <span style={{ color: GOLD }}>www.ramzabdae.com</span>
+              </span>
+              <span className="text-[10px] print:text-[7pt]" style={{ color: GOLD + '60' }}>
+                البريد <span style={{ color: GOLD + '90' }}>info@ramzabdae.com</span>
+              </span>
+              <span className="text-[10px] font-bold print:text-[7pt]" style={{ color: GOLD + '80' }}>
+                الهاتف <span style={{ color: GOLD }}>920013517</span>
+              </span>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── أنماط الطباعة ── */}
+      {/* أنماط الطباعة */}
       <style>{`
-        .official-report {
-          background: #ffffff !important;
-          color: #0f172a !important;
-        }
-
-        .official-report .bg-slate-50 {
-          background: #f8fafc !important;
-        }
-
-        .official-report .bg-slate-50\\/70 {
-          background: rgba(248,250,252,0.7) !important;
-        }
-
-        .official-report .text-slate-600,
-        .official-report .text-slate-500,
-        .official-report .text-slate-400 {
-          color: #475569 !important;
-        }
-
-        .official-report .text-slate-900,
-        .official-report .text-slate-800 {
-          color: #0f172a !important;
-        }
-
-        .official-report table {
-          background: #ffffff !important;
-        }
-
-        .official-report tr:nth-child(even) td {
-          background: rgba(248,250,252,0.7);
-        }
-
+        .official-report { background: #fff !important; color: #111 !important; }
         @media print {
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print\\:hidden { display: none !important; }
@@ -1149,11 +884,13 @@ export default function PropertyOfficialReport() {
           .print\\:shadow-none { box-shadow: none !important; }
           .print\\:p-3 { padding: 0.75rem !important; }
           .print\\:p-2 { padding: 0.5rem !important; }
-          .print\\:px-3 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
-          .print\\:py-2 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+          .print\\:gap-2 { gap: 0.5rem !important; }
+          .print\\:gap-3 { gap: 0.75rem !important; }
+          .print\\:mb-3 { margin-bottom: 0.75rem !important; }
+          .print\\:mb-2 { margin-bottom: 0.5rem !important; }
           .print\\:text-\\[7pt\\] { font-size: 7pt !important; }
           .print\\:text-\\[8pt\\] { font-size: 8pt !important; }
-          .print\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+          .print\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
           .print\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
           .print\\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
           @page { margin: 1cm; size: A4; }

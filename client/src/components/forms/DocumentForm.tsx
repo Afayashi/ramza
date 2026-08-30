@@ -42,6 +42,7 @@ const defaultData = {
 export default function DocumentForm({ document, isOpen, onClose, onSubmit }: DocumentFormProps) {
   const [form, setForm] = useState<any>(document ? { ...defaultData, ...document } : { ...defaultData });
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [properties, setProperties] = useState<any[]>([]);
   const [tenants, setTenants] = useState<any[]>([]);
 
@@ -59,7 +60,7 @@ export default function DocumentForm({ document, isOpen, onClose, onSubmit }: Do
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try { await onSubmit(form); onClose(); } catch (err) { console.error(err); } finally { setLoading(false); }
+    try { await onSubmit(form); onClose(); } catch (err: any) { setFormError(err?.message || 'حدث خطأ، يرجى المحاولة مرة أخرى'); } finally { setLoading(false); }
   };
 
   const propOpts = properties.map((p: any) => ({ value: p.id, label: p.name || p.id }));
@@ -70,7 +71,7 @@ export default function DocumentForm({ document, isOpen, onClose, onSubmit }: Do
       title={document ? 'تعديل الوثيقة' : 'إضافة وثيقة جديدة'}
       icon={<FolderOpen size={16} className="text-[#C8A951]" />}
       isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit}
-      loading={loading} submitLabel={document ? 'تحديث' : 'إضافة'} size="md"
+      loading={loading} error={formError} submitLabel={document ? 'تحديث' : 'إضافة'} size="md"
     >
       <FormSection title="بيانات الوثيقة" icon={<FolderOpen size={14} />}>
         <FormRow>
