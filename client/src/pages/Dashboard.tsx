@@ -132,22 +132,18 @@ export default function Dashboard() {
           )}
 
           {/* Hero Banner */}
-          <div className="relative rounded-xl overflow-hidden h-40 lg:h-48">
-            <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663078821712/Zm2JEbmeVFTJRp6HMZVTym/hero-dashboard-eLb4EMrUFnrPmJbLzSLQYy.webp"
-              alt="لوحة التحكم"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-l from-black/80 via-black/60 to-black/40" />
-            <div className="relative z-10 h-full flex flex-col justify-center px-6 lg:px-8">
-              <h1 className="font-heading text-xl lg:text-2xl font-bold text-white mb-1">
+          <div className="relative rounded-xl overflow-hidden h-40 lg:h-48" style={{ background: 'linear-gradient(135deg, #f5f0e8 0%, #ede8da 50%, #f0ebe0 100%)' }}>
+            <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #B8932A 0%, transparent 60%), radial-gradient(circle at 80% 20%, #B8932A 0%, transparent 50%)' }} />
+            <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-r" style={{ background: 'linear-gradient(to bottom, #B8932A, #d4a843)' }} />
+            <div className="relative z-10 h-full flex flex-col justify-center px-8 lg:px-10">
+              <h1 className="font-heading text-xl lg:text-2xl font-bold mb-1" style={{ color: '#1a1a2e' }}>
                 مرحباً بك في رمز الإبداع
               </h1>
-              <p className="text-sm text-white/70">
+              <p className="text-sm" style={{ color: '#6b7280' }}>
                 إدارة شاملة لأملاكك العقارية
               </p>
               <div className="flex items-center gap-4 mt-3">
-                <div className="flex items-center gap-1.5 text-xs text-white/60">
+                <div className="flex items-center gap-1.5 text-xs" style={{ color: '#9ca3af' }}>
                   <Calendar size={12} />
                   <span>{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                 </div>
@@ -156,6 +152,9 @@ export default function Dashboard() {
                   <span>تحديث</span>
                 </button>
               </div>
+            </div>
+            <div className="absolute left-8 top-1/2 -translate-y-1/2 opacity-8" style={{ opacity: 0.07 }}>
+              <svg width="120" height="120" viewBox="0 0 24 24" fill="#B8932A"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             </div>
           </div>
 

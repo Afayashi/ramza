@@ -6,8 +6,10 @@ import { Eye, EyeOff, LogIn, Building2, UserCheck } from 'lucide-react';
 import { saveSession } from '@/lib/auth';
 import { DEMO_OWNERS } from '@/lib/demoData';
 
-const GOLD = '#C8A951';
-const DARK = '#1a1209';
+const GOLD = '#B8932A';
+const LIGHT_BG = '#f8f6f1';
+const CARD_BG = '#ffffff';
+const TEXT_DARK = '#1a1a2e';
 
 const ADMIN_USER = import.meta.env.VITE_ADMIN_USERNAME || '';
 const ADMIN_HASH = import.meta.env.VITE_ADMIN_PASSWORD_HASH || '';
@@ -80,32 +82,32 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
   };
 
   const inputStyle = {
-    background: '#1a1209',
-    border: `1.5px solid ${GOLD}30`,
-    color: 'white',
+    background: '#f5f3ee',
+    border: `1.5px solid #d4b96a40`,
+    color: TEXT_DARK,
   };
 
   return (
-    <div dir="rtl" className="min-h-screen flex items-center justify-center px-4" style={{ background: DARK }}>
+    <div dir="rtl" className="min-h-screen flex items-center justify-center px-4" style={{ background: LIGHT_BG }}>
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full opacity-5"
-          style={{ background: GOLD, filter: 'blur(80px)' }} />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full opacity-5"
-          style={{ background: GOLD, filter: 'blur(80px)' }} />
+        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full opacity-10"
+          style={{ background: GOLD, filter: 'blur(100px)' }} />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full opacity-10"
+          style={{ background: GOLD, filter: 'blur(100px)' }} />
       </div>
 
       <div className="relative w-full max-w-md">
         {/* الشعار */}
         <div className="text-center mb-8">
           <img src="/ramza/brand/ramz-logo.svg" alt="رمز الإبداع"
-            className="w-28 h-28 mx-auto mb-3"
+            className="w-24 h-24 mx-auto mb-3"
             onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-          <h1 className="text-2xl font-black" style={{ color: GOLD }}>رمز الإبداع</h1>
-          <p className="text-sm mt-1" style={{ color: `${GOLD}70` }}>منصة إدارة الأملاك</p>
+          <h1 className="text-2xl font-black" style={{ color: TEXT_DARK }}>رمز الإبداع</h1>
+          <p className="text-sm mt-1" style={{ color: '#6b7280' }}>منصة إدارة الأملاك</p>
         </div>
 
         {/* تبويبات */}
-        <div className="flex rounded-xl overflow-hidden mb-6" style={{ border: `1px solid ${GOLD}20` }}>
+        <div className="flex rounded-xl overflow-hidden mb-6 shadow-sm" style={{ border: `1px solid #e5e0d5` }}>
           {[
             { key: 'admin', label: 'مدير النظام', icon: Building2 },
             { key: 'owner', label: 'بوابة الملاك', icon: UserCheck },
@@ -113,8 +115,8 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
             <button key={t.key} onClick={() => { setTab(t.key as any); setError(''); }}
               className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-all"
               style={{
-                background: tab === t.key ? GOLD : '#2d1f06',
-                color: tab === t.key ? DARK : `${GOLD}80`,
+                background: tab === t.key ? GOLD : '#f5f3ee',
+                color: tab === t.key ? '#fff' : '#6b5c2e',
               }}>
               <t.icon className="w-4 h-4" />
               {t.label}
@@ -123,14 +125,14 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
         </div>
 
         {/* بطاقة الدخول */}
-        <div className="rounded-2xl p-8 shadow-2xl" style={{ background: '#2d1f06', border: `1px solid ${GOLD}20` }}>
-          <h2 className="text-lg font-black text-white mb-6 text-center">
+        <div className="rounded-2xl p-8 shadow-lg" style={{ background: CARD_BG, border: `1px solid #e5e0d5` }}>
+          <h2 className="text-lg font-black mb-6 text-center" style={{ color: TEXT_DARK }}>
             {tab === 'admin' ? 'دخول المدير' : 'دخول المالك'}
           </h2>
 
           {error && (
             <div className="mb-4 p-3 rounded-xl text-sm text-center font-bold"
-              style={{ background: '#ef444420', border: '1px solid #ef444440', color: '#ef4444' }}>
+              style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626' }}>
               {error}
             </div>
           )}
@@ -138,71 +140,71 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
           {tab === 'admin' ? (
             <form onSubmit={handleAdminLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold mb-2" style={{ color: `${GOLD}90` }}>اسم المستخدم</label>
+                <label className="block text-xs font-bold mb-2" style={{ color: '#374151' }}>اسم المستخدم</label>
                 <input type="text" value={username} onChange={e => setUsername(e.target.value)}
                   placeholder="أدخل اسم المستخدم" required dir="ltr"
-                  className="w-full px-4 py-3 rounded-xl text-sm placeholder-gray-500 outline-none transition"
+                  className="w-full px-4 py-3 rounded-xl text-sm outline-none transition"
                   style={inputStyle}
                   onFocus={e => e.target.style.borderColor = GOLD}
-                  onBlur={e => e.target.style.borderColor = `${GOLD}30`} />
+                  onBlur={e => e.target.style.borderColor = '#d4b96a40'} />
               </div>
               <div>
-                <label className="block text-xs font-bold mb-2" style={{ color: `${GOLD}90` }}>كلمة المرور</label>
+                <label className="block text-xs font-bold mb-2" style={{ color: '#374151' }}>كلمة المرور</label>
                 <div className="relative">
                   <input type={showPassword ? 'text' : 'password'} value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="أدخل كلمة المرور" required dir="ltr"
-                    className="w-full px-4 py-3 pl-10 rounded-xl text-sm placeholder-gray-500 outline-none transition"
+                    className="w-full px-4 py-3 pl-10 rounded-xl text-sm outline-none transition"
                     style={inputStyle}
                     onFocus={e => e.target.style.borderColor = GOLD}
-                    onBlur={e => e.target.style.borderColor = `${GOLD}30`} />
+                    onBlur={e => e.target.style.borderColor = '#d4b96a40'} />
                   <button type="button" onClick={() => setShowPassword(!showPassword)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition">
+                    className="absolute left-3 top-1/2 -translate-y-1/2 transition" style={{ color: '#9ca3af' }}>
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
               <button type="submit" disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-black text-sm transition-all mt-6"
-                style={{ background: loading ? `${GOLD}60` : GOLD, color: DARK }}>
-                {loading ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <LogIn className="w-4 h-4" />}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-black text-sm transition-all mt-6 text-white"
+                style={{ background: loading ? `${GOLD}90` : GOLD }}>
+                {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <LogIn className="w-4 h-4" />}
                 {loading ? 'جاري التحقق...' : 'دخول'}
               </button>
             </form>
           ) : (
             <form onSubmit={handleOwnerLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold mb-2" style={{ color: `${GOLD}90` }}>رقم الهوية</label>
+                <label className="block text-xs font-bold mb-2" style={{ color: '#374151' }}>رقم الهوية</label>
                 <input type="text" value={idNumber} onChange={e => setIdNumber(e.target.value)}
                   placeholder="أدخل رقم الهوية" required dir="ltr"
-                  className="w-full px-4 py-3 rounded-xl text-sm placeholder-gray-500 outline-none transition"
+                  className="w-full px-4 py-3 rounded-xl text-sm outline-none transition"
                   style={inputStyle}
                   onFocus={e => e.target.style.borderColor = GOLD}
-                  onBlur={e => e.target.style.borderColor = `${GOLD}30`} />
+                  onBlur={e => e.target.style.borderColor = '#d4b96a40'} />
               </div>
               <div>
-                <label className="block text-xs font-bold mb-2" style={{ color: `${GOLD}90` }}>رقم الجوال</label>
+                <label className="block text-xs font-bold mb-2" style={{ color: '#374151' }}>رقم الجوال</label>
                 <input type="text" value={phone} onChange={e => setPhone(e.target.value)}
                   placeholder="05xxxxxxxx" required dir="ltr"
-                  className="w-full px-4 py-3 rounded-xl text-sm placeholder-gray-500 outline-none transition"
+                  className="w-full px-4 py-3 rounded-xl text-sm outline-none transition"
                   style={inputStyle}
                   onFocus={e => e.target.style.borderColor = GOLD}
-                  onBlur={e => e.target.style.borderColor = `${GOLD}30`} />
+                  onBlur={e => e.target.style.borderColor = '#d4b96a40'} />
               </div>
-              <p className="text-[11px] text-center" style={{ color: `${GOLD}60` }}>
+              <p className="text-[11px] text-center" style={{ color: '#9ca3af' }}>
                 يُستخدم رقم الهوية ورقم الجوال المسجّلان في المنظومة
               </p>
               <button type="submit" disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-black text-sm transition-all mt-6"
-                style={{ background: loading ? `${GOLD}60` : GOLD, color: DARK }}>
-                {loading ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <UserCheck className="w-4 h-4" />}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-black text-sm transition-all mt-6 text-white"
+                style={{ background: loading ? `${GOLD}90` : GOLD }}>
+                {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <UserCheck className="w-4 h-4" />}
                 {loading ? 'جاري التحقق...' : 'دخول'}
               </button>
             </form>
           )}
         </div>
 
-        <p className="text-center text-xs mt-6" style={{ color: `${GOLD}40` }}>
+        <p className="text-center text-xs mt-6" style={{ color: '#9ca3af' }}>
           © {new Date().getFullYear()} رمز الإبداع لإدارة الأملاك
         </p>
       </div>
