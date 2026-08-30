@@ -2,7 +2,7 @@
  * صفحة تسجيل الدخول - رمز الإبداع
  */
 import { useState } from 'react';
-import { Eye, EyeOff, LogIn, Building2 } from 'lucide-react';
+import { Eye, EyeOff, LogIn } from 'lucide-react';
 
 const GOLD = '#C8A951';
 const DARK = '#1a1209';
@@ -72,10 +72,7 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
       <div className="relative w-full max-w-md">
         {/* الشعار */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: `${GOLD}15`, border: `2px solid ${GOLD}40` }}>
-            <Building2 className="w-10 h-10" style={{ color: GOLD }} />
-          </div>
+          <img src="/ramza/brand/ramz-logo.svg" alt="رمز الإبداع" className="w-28 h-28 mx-auto mb-3" />
           <h1 className="text-2xl font-black" style={{ color: GOLD }}>رمز الإبداع</h1>
           <p className="text-sm mt-1" style={{ color: `${GOLD}70` }}>منصة إدارة الأملاك</p>
         </div>
