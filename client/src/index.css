@@ -324,3 +324,69 @@
     color: oklch(0.98 0.005 85);
   }
 }
+
+/* ── Print Styles ─────────────────────────────────────── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 10mm;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 9pt;
+    direction: rtl;
+  }
+
+  /* Hide everything except the report */
+  body > * {
+    display: none !important;
+  }
+
+  .official-report {
+    display: block !important;
+  }
+
+  /* Remove shadows and borders for cleaner print */
+  .official-report * {
+    box-shadow: none !important;
+  }
+
+  /* Page breaks */
+  .print-break-before {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  .print-break-inside-avoid {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Tables */
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  /* Ensure backgrounds print */
+  .official-report [style*="background"] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

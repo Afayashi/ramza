@@ -91,7 +91,7 @@ function ReportTable({ headers, rows, emptyMsg }: {
 // ─── كارت قسم ────────────────────────────────────
 function Section({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none ${className}`}>
+    <div className={`bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm print:rounded print:shadow-none print:border-gray-300 print:mb-3 print-break-inside-avoid ${className}`}>
       {children}
     </div>
   );
