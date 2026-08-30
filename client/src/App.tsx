@@ -6,9 +6,11 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
+import { useState } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import LoginPage, { isAuthenticated as checkLocalAuth } from "./pages/LoginPage";
 
 // الصفحات الأساسية
 import Dashboard from "./pages/Dashboard";
@@ -217,6 +219,12 @@ function Router() {
 }
 
 function App() {
+  const [authed, setAuthed] = useState(checkLocalAuth);
+
+  if (!authed) {
+    return <LoginPage onSuccess={() => setAuthed(true)} />;
+  }
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">

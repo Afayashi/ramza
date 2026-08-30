@@ -30,6 +30,8 @@ jobs:
           VITE_BASE44_API_KEY: ${{ secrets.VITE_BASE44_API_KEY }}
           VITE_TAQNYAT_BEARER: ${{ secrets.VITE_TAQNYAT_BEARER }}
           VITE_TAQNYAT_SENDER: ${{ secrets.VITE_TAQNYAT_SENDER }}
+          VITE_ADMIN_USERNAME: ${{ secrets.VITE_ADMIN_USERNAME }}
+          VITE_ADMIN_PASSWORD_HASH: ${{ secrets.VITE_ADMIN_PASSWORD_HASH }}
         run: npm run build
 
       - name: Deploy
