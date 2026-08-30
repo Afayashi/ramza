@@ -10,7 +10,9 @@ import { useState } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
-import LoginPage, { isAuthenticated as checkLocalAuth } from "./pages/LoginPage";
+import LoginPage from "./pages/LoginPage";
+import OwnerDashboard from "./pages/OwnerDashboard";
+import { isAuthenticated as checkLocalAuth, getSession } from "./lib/auth";
 
 // الصفحات الأساسية
 import Dashboard from "./pages/Dashboard";
@@ -222,9 +224,18 @@ function AppRouter() {
 
 function App() {
   const [authed, setAuthed] = useState(checkLocalAuth);
+  const [, forceUpdate] = useState(0);
 
   if (!authed) {
     return <LoginPage onSuccess={() => setAuthed(true)} />;
+  }
+
+  const session = getSession();
+
+  if (session?.role === 'owner') {
+    return (
+      <OwnerDashboard onLogout={() => { setAuthed(false); forceUpdate(n => n + 1); }} />
+    );
   }
 
   return (
