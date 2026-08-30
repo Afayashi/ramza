@@ -3705,6 +3705,11 @@ export const DEMO_DOCS = [
 ];
 
 
+const _now = new Date();
+const thisMonth = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}`;
+const _last = new Date(_now.getFullYear(), _now.getMonth() - 1, 1);
+const lastMonth = `${_last.getFullYear()}-${String(_last.getMonth() + 1).padStart(2, '0')}`;
+
 export const DEMO_COMPLAINTS = [
   { id: 'c1', 'عنوان_الشكوى': 'ضوضاء من الجيران', 'اسم_المستأجر': 'أحمد محمد العتيبي', status: 'جديدة', created_date: `${thisMonth}-12` },
   { id: 'c2', 'عنوان_الشكوى': 'مشكلة في مواقف السيارات', 'اسم_المستأجر': 'فهد عبدالله الشمري', status: 'قيد_المعالجة', created_date: `${thisMonth}-08` },
