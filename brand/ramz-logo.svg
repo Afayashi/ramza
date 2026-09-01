@@ -1,0 +1,28 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#C8A951" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M28 176L84 124V176" />
+    <path d="M78 176L102 154L132 176" />
+    <path d="M124 176L168 136V176" />
+    <path d="M164 176L194 154L228 176" />
+
+    <path d="M68 122V54L112 20V140" />
+    <path d="M112 140V44L160 8V154" />
+    <path d="M160 154V82L214 106V164" />
+
+    <path d="M84 54V140" />
+    <path d="M96 44V132" />
+    <path d="M126 38V140" />
+    <path d="M140 28V148" />
+    <path d="M174 92H206" />
+    <path d="M174 108H206" />
+    <path d="M174 124H206" />
+    <path d="M174 140H206" />
+
+    <path d="M52 176V150H92" />
+    <path d="M146 176V150H188" />
+    <path d="M68 160V176" />
+    <path d="M82 160V176" />
+    <path d="M164 160V176" />
+    <path d="M178 160V176" />
+  </g>
+</svg>
