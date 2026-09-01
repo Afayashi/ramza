@@ -144,8 +144,7 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
         <div className="w-full max-w-sm">
           {/* شعار صغير */}
           <div className="flex items-center gap-2 mb-10">
-            <img src="/ramza/brand/ramz-logo.svg" alt="رمز الإبداع" className="w-8 h-8"
-              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            <img src="/ramza/brand/ramz-logo.svg" alt="رمز الإبداع" className="w-10 h-10" />
             <span className="font-black text-sm" style={{ color: '#1a1a2e' }}>رمز الإبداع</span>
           </div>
 
@@ -273,14 +272,14 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
 
         {/* المحتوى الرئيسي */}
         <div className="text-center w-full">
-          {/* أيقونة كبيرة */}
-          <div className="w-28 h-28 rounded-2xl mx-auto mb-6 flex items-center justify-center"
-            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
-            <Building2 className="w-14 h-14" style={{ color: '#C8A951' }} />
-          </div>
+          {/* الشعار الكبير */}
+          <img src="/ramza/brand/ramz-logo.svg" alt="رمز الإبداع"
+            className="mx-auto mb-2"
+            style={{ width: '200px', height: '160px', objectFit: 'contain', filter: 'drop-shadow(0 4px 24px rgba(200,169,81,0.25))' }} />
+          <div className="mb-1 font-black text-xl" style={{ color: '#C8A951' }}>شركة رمز الإبداع</div>
+          <div className="mb-8 font-bold text-base" style={{ color: '#C8A951' }}>لإدارة الأملاك</div>
 
-          <h2 className="text-3xl font-black text-white mb-3">رمز الإبداع</h2>
-          <p className="text-sm mb-10" style={{ color: '#86efac' }}>
+          <p className="text-xs mb-8" style={{ color: '#86efac' }}>
             منصة إدارة الأملاك والعقارات المتكاملة
           </p>
 
