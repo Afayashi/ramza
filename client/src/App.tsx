@@ -125,6 +125,7 @@ function AppRouter() {
       <Route path="/manager-dashboard" component={ManagerDashboard} />
       <Route path="/analytics" component={AnalyticsDashboard} />
       <Route path="/smart-insights" component={SmartSuggestions} />
+      <Route path="/dashboard" component={Dashboard} />
 
       {/* العقارات */}
       <Route path="/properties" component={Properties} />
@@ -138,6 +139,9 @@ function AppRouter() {
       <Route path="/owner-portal" component={OwnerPortal} />
       <Route path="/brokerage-contracts" component={BrokerageContracts} />
       <Route path="/ad-licenses" component={AdLicenses} />
+      <Route path="/buildings" component={Properties} />
+      <Route path="/units" component={UnitStatus} />
+      <Route path="/ownership-docs" component={PropertyDocuments} />
 
       {/* المستأجرون */}
       <Route path="/tenants" component={Tenants} />
@@ -148,6 +152,8 @@ function AppRouter() {
       <Route path="/tenant-portal" component={TenantPortal} />
       <Route path="/tenant-analytics" component={TenantAnalytics} />
       <Route path="/tenant-rating" component={TenantRating} />
+      <Route path="/contracts/archived" component={Archive} />
+      <Route path="/tenants/behavior" component={TenantAnalytics} />
 
       {/* المالية */}
       <Route path="/payments" component={Payments} />
@@ -159,6 +165,12 @@ function AppRouter() {
       <Route path="/payment-timeline" component={PaymentTimeline} />
       <Route path="/accounting" component={Accounting} />
       <Route path="/payment-gateway" component={PaymentGateway} />
+      <Route path="/finance" component={FinancialSummary} />
+      <Route path="/finance/revenues" component={Payments} />
+      <Route path="/finance/expenses" component={Expenses} />
+      <Route path="/finance/owners" component={FinancialStatements} />
+      <Route path="/finance/ejar-transfers" component={Ejar} />
+      <Route path="/finance/contract-financials" component={FinancialReports} />
 
       {/* الصيانة */}
       <Route path="/maintenance" component={Maintenance} />
@@ -169,6 +181,7 @@ function AppRouter() {
       <Route path="/technician-dashboard" component={TechnicianDashboard} />
       <Route path="/technician-manager" component={TechnicianManager} />
       <Route path="/inventory" component={Inventory} />
+      <Route path="/maintenance/technicians" component={TechnicianManager} />
 
       {/* التقارير */}
       <Route path="/reports-center" component={ReportsCenter} />
@@ -182,6 +195,11 @@ function AppRouter() {
       <Route path="/market-research" component={MarketResearch} />
       <Route path="/print-center" component={PrintCenter} />
       <Route path="/occupancy-report" component={OccupancyReport} />
+      <Route path="/reports/payments" component={ReportsCenter} />
+      <Route path="/reports/contracts" component={ReportsCenter} />
+      <Route path="/reports/vacancy" component={OccupancyReport} />
+      <Route path="/reports/owner-profitability" component={ROI} />
+      <Route path="/reports/office-profitability" component={FinancialReports} />
 
       {/* العمليات */}
       <Route path="/complaints" component={Complaints} />
@@ -192,6 +210,24 @@ function AppRouter() {
       <Route path="/archive" component={Archive} />
       <Route path="/notifications" component={NotificationsCenter} />
       <Route path="/crm" component={CRM} />
+      <Route path="/crm/requests" component={CRM} />
+      <Route path="/crm/offers" component={CRM} />
+      <Route path="/crm/offers/map" component={MapView} />
+      <Route path="/whatsapp/office-link" component={IntegrationWhatsAppSettings} />
+      <Route path="/whatsapp-history" component={WhatsApp} />
+      <Route path="/whatsapp-settings" component={IntegrationWhatsAppSettings} />
+      <Route path="/whatsapp/agent-analytics" component={WhatsApp} />
+      <Route path="/whatsapp/requests" component={Communication} />
+      <Route path="/payment-receipts" component={Payments} />
+      <Route path="/follow-ups" component={NotificationsCenter} />
+      <Route path="/calendar" component={Appointments} />
+      <Route path="/ai-assistant" component={SmartSuggestions} />
+      <Route path="/risk-radar" component={OverdueTracker} />
+      <Route path="/office-health" component={AnalyticsDashboard} />
+      <Route path="/zatca" component={AutoInvoicing} />
+      <Route path="/zatca/owners" component={Accounting} />
+      <Route path="/tasks" component={Appointments} />
+      <Route path="/tasks/team" component={TechnicianManager} />
 
       {/* الإعدادات */}
       <Route path="/settings" component={Settings} />
@@ -216,6 +252,24 @@ function AppRouter() {
       <Route path="/sms-sender" component={SMSSender} />
       <Route path="/integrations/google" component={IntegrationGoogleSettings} />
       <Route path="/integrations/slack" component={IntegrationSlackSettings} />
+      <Route path="/settings/subscription" component={Settings} />
+      <Route path="/settings/sms" component={IntegrationSMSSettings} />
+      <Route path="/legal" component={Documents} />
+      <Route path="/settings/import-data" component={DataImport} />
+      <Route path="/settings/branding" component={CompanySettings} />
+      <Route path="/settings/notice" component={NotificationsCenter} />
+      <Route path="/settings/documents" component={Documents} />
+      <Route path="/settings/cities" component={Settings} />
+      <Route path="/settings/nationalities" component={Settings} />
+      <Route path="/settings/property-types" component={Settings} />
+      <Route path="/settings/spec-types" component={Settings} />
+      <Route path="/settings/id-types" component={Settings} />
+      <Route path="/settings/purposes" component={Settings} />
+      <Route path="/settings/rent-types" component={Settings} />
+      <Route path="/settings/deal-types" component={Settings} />
+      <Route path="/settings/crm-lists" component={Settings} />
+      <Route path="/settings/maintenance-categories" component={Settings} />
+      <Route path="/settings/expense-categories" component={Settings} />
 
       {/* 404 */}
       <Route path="/404" component={NotFound} />
