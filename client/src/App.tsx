@@ -15,7 +15,7 @@ import OwnerDashboard from "./pages/OwnerDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import TenantDashboard from "./pages/TenantDashboard";
 import TechnicianPortal from "./pages/TechnicianPortal";
-import { isAuthenticated as checkLocalAuth, getSession } from "./lib/auth";
+import { isAuthenticated as checkLocalAuth, getSession, clearSession } from "./lib/auth";
 
 // الصفحات الأساسية
 import Dashboard from "./pages/Dashboard";
@@ -280,22 +280,41 @@ function AppRouter() {
 }
 
 function App() {
-  const [authed, setAuthed] = useState(checkLocalAuth);
+  const [authed, setAuthed] = useState(() => checkLocalAuth());
   const [, forceUpdate] = useState(0);
 
+  // مراقبة انتهاء الجلسة كل دقيقة
+  useState(() => {
+    const id = setInterval(() => {
+      if (!checkLocalAuth()) {
+        setAuthed(false);
+        forceUpdate(n => n + 1);
+      }
+    }, 60_000);
+    return () => clearInterval(id);
+  });
+
+  // إجبار تسجيل الدخول — لا عرض تجريبي
   if (!authed) {
-    return <LoginPage onSuccess={() => setAuthed(true)} />;
+    return <LoginPage onSuccess={() => { setAuthed(true); forceUpdate(n => n + 1); }} />;
   }
 
   const session = getSession();
 
-  const onLogout = () => { setAuthed(false); forceUpdate(n => n + 1); };
+  // إذا انتهت الجلسة من التحقق الثاني
+  if (!session) {
+    setAuthed(false);
+    return <LoginPage onSuccess={() => { setAuthed(true); forceUpdate(n => n + 1); }} />;
+  }
 
-  if (session?.role === 'owner') return <OwnerDashboard onLogout={onLogout} />;
-  if (session?.role === 'employee') return <EmployeeDashboard onLogout={onLogout} />;
-  if (session?.role === 'tenant') return <TenantDashboard onLogout={onLogout} />;
-  if (session?.role === 'technician') return <TechnicianPortal onLogout={onLogout} />;
+  const onLogout = () => { clearSession(); setAuthed(false); forceUpdate(n => n + 1); };
 
+  if (session.role === 'owner') return <OwnerDashboard onLogout={onLogout} />;
+  if (session.role === 'employee') return <EmployeeDashboard onLogout={onLogout} />;
+  if (session.role === 'tenant') return <TenantDashboard onLogout={onLogout} />;
+  if (session.role === 'technician') return <TechnicianPortal onLogout={onLogout} />;
+
+  // المدير: لوحة التحكم الكاملة
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">

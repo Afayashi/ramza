@@ -175,24 +175,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
 
           {/* Auth Button */}
-          {isAuthenticated ? (
-            <button
-              onClick={logout}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs text-red-400 hover:bg-red-500/10 transition-colors"
-            >
-              <LogOut size={14} />
-              <span>تسجيل الخروج</span>
-              {user?.name && <span className="mr-auto text-[10px] text-muted-foreground truncate max-w-[100px]">{user.name}</span>}
-            </button>
-          ) : (
-            <button
-              onClick={navigateToLogin}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
-            >
-              <LogIn size={14} />
-              <span>تسجيل الدخول لعرض البيانات الحقيقية</span>
-            </button>
-          )}
+          <button
+            onClick={() => { import('@/lib/auth').then(m => { m.clearSession(); window.location.reload(); }); }}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs text-red-400 hover:bg-red-500/10 transition-colors"
+          >
+            <LogOut size={14} />
+            <span>تسجيل الخروج</span>
+          </button>
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Phone size={12} />

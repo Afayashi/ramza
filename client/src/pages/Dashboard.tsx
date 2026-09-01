@@ -116,20 +116,7 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Demo Banner */}
-          {isDemo && (
-            <div className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">
-              <div className="flex items-center gap-2 text-amber-400">
-                <Info size={16} />
-                <span>يتم عرض بيانات تجريبية. سجّل الدخول لعرض بياناتك الحقيقية.</span>
-              </div>
-              {!isAuthenticated && (
-                <Button onClick={navigateToLogin} variant="outline" size="sm" className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-xs">
-                  تسجيل الدخول
-                </Button>
-              )}
-            </div>
-          )}
+          {/* Demo Banner - مخفي: تسجيل الدخول إجباري */}
 
           {/* Hero Banner */}
           <div className="relative rounded-xl overflow-hidden h-40 lg:h-48" style={{ background: 'linear-gradient(135deg, #f5f0e8 0%, #ede8da 50%, #f0ebe0 100%)' }}>

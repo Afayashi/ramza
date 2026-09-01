@@ -121,11 +121,11 @@ export default function TopBar({ onMenuToggle, pageTitle }: TopBarProps) {
           </div>
         ) : (
           <button
-            onClick={navigateToLogin}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+            onClick={() => { import('@/lib/auth').then(m => m.clearSession()); window.location.reload(); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-medium hover:bg-red-500/20 transition-colors"
           >
             <LogIn size={14} />
-            <span className="hidden sm:inline">تسجيل الدخول</span>
+            <span className="hidden sm:inline">تسجيل الخروج</span>
           </button>
         )}
       </div>
