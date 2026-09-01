@@ -12,6 +12,9 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import LoginPage from "./pages/LoginPage";
 import OwnerDashboard from "./pages/OwnerDashboard";
+import EmployeeDashboard from "./pages/EmployeeDashboard";
+import TenantDashboard from "./pages/TenantDashboard";
+import TechnicianPortal from "./pages/TechnicianPortal";
 import { isAuthenticated as checkLocalAuth, getSession } from "./lib/auth";
 
 // الصفحات الأساسية
@@ -232,11 +235,12 @@ function App() {
 
   const session = getSession();
 
-  if (session?.role === 'owner') {
-    return (
-      <OwnerDashboard onLogout={() => { setAuthed(false); forceUpdate(n => n + 1); }} />
-    );
-  }
+  const onLogout = () => { setAuthed(false); forceUpdate(n => n + 1); };
+
+  if (session?.role === 'owner') return <OwnerDashboard onLogout={onLogout} />;
+  if (session?.role === 'employee') return <EmployeeDashboard onLogout={onLogout} />;
+  if (session?.role === 'tenant') return <TenantDashboard onLogout={onLogout} />;
+  if (session?.role === 'technician') return <TechnicianPortal onLogout={onLogout} />;
 
   return (
     <ErrorBoundary>

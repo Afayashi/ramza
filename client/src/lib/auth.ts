@@ -1,9 +1,12 @@
-export type UserRole = 'admin' | 'owner';
+export type UserRole = 'admin' | 'owner' | 'employee' | 'tenant' | 'technician';
 
 export interface SessionUser {
   role: UserRole;
   name: string;
   ownerId?: string;
+  employeeId?: string;
+  tenantId?: string;
+  technicianId?: string;
 }
 
 export function saveSession(user: SessionUser) {
