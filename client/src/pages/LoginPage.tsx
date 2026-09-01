@@ -29,11 +29,11 @@ function normalizePhone(p: string) {
 type RoleKey = 'admin' | 'employee' | 'owner' | 'tenant' | 'technician';
 
 const ROLES: { key: RoleKey; label: string; sublabel: string; icon: any; color: string }[] = [
-  { key: 'admin',      label: 'المدير',    sublabel: 'صلاحيات كاملة',     icon: Building2,  color: '#B8932A' },
-  { key: 'employee',   label: 'الموظف',    sublabel: 'إدارة العمليات',    icon: Briefcase,  color: '#2563eb' },
-  { key: 'owner',      label: 'المالك',    sublabel: 'بوابة الملاك',      icon: UserCheck,  color: '#059669' },
-  { key: 'tenant',     label: 'المستأجر',  sublabel: 'بوابة المستأجرين', icon: Users,      color: '#7c3aed' },
-  { key: 'technician', label: 'الفني',     sublabel: 'لوحة الصيانة',     icon: Wrench,     color: '#dc2626' },
+  { key: 'admin',      label: 'المدير',    sublabel: '', icon: Building2,  color: '#B8932A' },
+  { key: 'employee',   label: 'الموظف',    sublabel: '', icon: Briefcase,  color: '#2563eb' },
+  { key: 'owner',      label: 'المالك',    sublabel: '', icon: UserCheck,  color: '#059669' },
+  { key: 'tenant',     label: 'المستأجر',  sublabel: '', icon: Users,      color: '#7c3aed' },
+  { key: 'technician', label: 'الفني',     sublabel: '', icon: Wrench,     color: '#dc2626' },
 ];
 
 const DEMO_EMPLOYEES = [
@@ -158,7 +158,6 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
                     </div>
                     <div className="flex-1">
                       <div className="font-black text-base" style={{ color: TEXT_DARK }}>{role.label}</div>
-                      <div className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{role.sublabel}</div>
                     </div>
                     <ArrowRight className="w-4 h-4 rotate-180" style={{ color: '#9ca3af' }} />
                   </button>
@@ -180,7 +179,6 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
                   </div>
                   <div>
                     <div className="font-black text-base" style={{ color: TEXT_DARK }}>دخول {activeRole!.label}</div>
-                    <div className="text-xs" style={{ color: '#9ca3af' }}>{activeRole!.sublabel}</div>
                   </div>
                 </div>
               ); })()}
