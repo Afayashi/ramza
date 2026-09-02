@@ -4,12 +4,13 @@
  * مع فلترة متقدمة وجدولة دورية
  */
 import { useState, useMemo, useRef } from "react";
+import { Link } from "wouter";
 import {
   Building2, Home, FileText, DollarSign, Users, Download,
   Calendar, Filter, Clock, RefreshCw, ChevronDown,
   TrendingUp, TrendingDown, CheckCircle, AlertCircle,
   Printer, Mail, BarChart2, PieChart, Table, Loader2,
-  Bell, Plus, Trash2, Eye,
+  Bell, Plus, Trash2, Eye, ExternalLink,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useMultiEntityData } from "@/hooks/useEntityData";
@@ -373,6 +374,30 @@ export default function ReportsCenter() {
           </button>
         ))}
       </div>
+
+      {/* Quick links to individual report pages */}
+      {(() => {
+        const links: Record<string, { href: string; label: string }[]> = {
+          properties: [{ href: "/properties", label: "إدارة العقارات" }, { href: "/property-performance", label: "أداء العقارات" }],
+          units:      [{ href: "/unit-status", label: "حالة الوحدات" }],
+          contracts:  [{ href: "/contracts", label: "إدارة العقود" }, { href: "/lease-builder", label: "إنشاء عقد" }],
+          financial:  [{ href: "/financial-reports", label: "التقارير المالية" }, { href: "/financial-summary", label: "الملخص المالي" }],
+          users:      [{ href: "/tenants", label: "إدارة المستأجرين" }, { href: "/tenant-analytics", label: "تحليلات المستأجرين" }],
+        };
+        const tabLinks = links[activeTab] || [];
+        if (!tabLinks.length) return null;
+        return (
+          <div className="flex gap-2 mb-3 flex-wrap">
+            {tabLinks.map(l => (
+              <Link key={l.href} href={l.href}>
+                <a className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold border border-border text-muted-foreground hover:text-foreground hover:bg-sidebar transition">
+                  <ExternalLink size={11} /> {l.label}
+                </a>
+              </Link>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Filter bar */}
       <div className="bg-card border border-border rounded-xl p-3 mb-4">

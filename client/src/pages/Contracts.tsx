@@ -208,7 +208,14 @@ export default function Contracts() {
   return (
     <DashboardLayout pageTitle="العقود">
       <PageHeader title="إدارة العقود" description={`${leases.length} عقد`}>
-        <Button size="sm" className="gap-2" onClick={handleAdd}><Plus size={16} /> إنشاء عقد جديد</Button>
+        <div className="flex gap-2">
+          <Link href="/lease-builder">
+            <a className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition" style={{ background: '#C8A951' }}>
+              <FileText size={14} /> إنشاء عقد جديد
+            </a>
+          </Link>
+          <Button size="sm" className="gap-2" onClick={handleAdd}><Plus size={16} /> إضافة عقد</Button>
+        </div>
       </PageHeader>
 
       {loading ? (

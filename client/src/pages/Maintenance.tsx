@@ -3,7 +3,8 @@
  * مع نماذج CRUD
  */
 import { useState } from 'react';
-import { Wrench, Plus, CheckCircle, Clock, Pencil, Trash2 } from 'lucide-react';
+import { Link } from 'wouter';
+import { Wrench, Plus, CheckCircle, Clock, Pencil, Trash2, HardHat } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
@@ -85,7 +86,14 @@ export default function Maintenance() {
   return (
     <DashboardLayout pageTitle="الصيانة">
       <PageHeader title="طلبات الصيانة" description={`${requests.length} طلب`}>
-        <Button size="sm" className="gap-2" onClick={handleAdd}><Plus size={16} /> طلب صيانة جديد</Button>
+        <div className="flex gap-2">
+          <Link href="/technician-manager">
+            <a className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition">
+              <HardHat size={14} /> بوابة الفنيين
+            </a>
+          </Link>
+          <Button size="sm" className="gap-2" onClick={handleAdd}><Plus size={16} /> طلب صيانة جديد</Button>
+        </div>
       </PageHeader>
 
       {loading ? (

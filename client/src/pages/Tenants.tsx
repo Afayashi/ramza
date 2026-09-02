@@ -3,7 +3,8 @@
  * عرض وإدارة جميع المستأجرين مع نماذج CRUD
  */
 import { useState } from 'react';
-import { Users, Plus, Phone, Mail, Eye, Pencil, Trash2, UserCheck, UserX } from 'lucide-react';
+import { Link } from 'wouter';
+import { Users, Plus, Phone, Mail, Eye, Pencil, Trash2, UserCheck, UserX, BarChart2 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
@@ -61,7 +62,14 @@ export default function Tenants() {
   return (
     <DashboardLayout pageTitle="المستأجرون">
       <PageHeader title="إدارة المستأجرين" description={`${tenants.length} مستأجر مسجل`}>
-        <Button size="sm" className="gap-2" onClick={handleAdd}><Plus size={16} /> إضافة مستأجر</Button>
+        <div className="flex gap-2">
+          <Link href="/tenant-analytics">
+            <a className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition">
+              <BarChart2 size={14} /> تحليلات المستأجرين
+            </a>
+          </Link>
+          <Button size="sm" className="gap-2" onClick={handleAdd}><Plus size={16} /> إضافة مستأجر</Button>
+        </div>
       </PageHeader>
 
       {loading ? (

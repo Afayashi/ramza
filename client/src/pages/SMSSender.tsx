@@ -3,6 +3,7 @@
  * إرسال SMS يدوي وجماعي للمستأجرين والملاك
  */
 import { useState, useMemo } from 'react';
+import { Link } from 'wouter';
 import {
   Send, Users, MessageSquare, Phone, CheckSquare, Square,
   Loader2, ChevronDown, ChevronUp, AlertCircle, CheckCircle2
@@ -109,7 +110,7 @@ export default function SMSSender() {
             <p className="text-sm font-bold text-amber-800">خدمة SMS غير مُهيأة</p>
             <p className="text-xs text-amber-600 mt-0.5">
               يرجى إعداد Bearer Token من{' '}
-              <a href="/integrations/sms" className="underline font-bold">إعدادات SMS</a> قبل الإرسال.
+              <Link href="/integrations/sms" className="underline font-bold">إعدادات SMS</Link> قبل الإرسال.
             </p>
           </div>
         </div>
